@@ -497,7 +497,7 @@ def run_quality_review(
     input_path: str | Path,
     out_dir: str | Path,
     today: date | None = None,
-    max_pages: int = 8,
+    max_pages: int = 6,
 ) -> dict[str, Any]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -517,7 +517,7 @@ def run_quality_review(
     if len(files) > 1:
         from concurrent.futures import ThreadPoolExecutor
 
-        with ThreadPoolExecutor(max_workers=min(4, len(files))) as ex:
+        with ThreadPoolExecutor(max_workers=min(6, len(files))) as ex:
             nested = list(ex.map(_extract_one, files))
     else:
         nested = [_extract_one(f) for f in files]
@@ -561,7 +561,7 @@ def run_quality_review_batch(
     inputs: list[str | Path],
     out_dir: str | Path,
     today: date | None = None,
-    max_pages: int = 8,
+    max_pages: int = 6,
     max_workers: int = 4,
 ) -> dict[str, Any]:
     """여러 검토대상(zip 등)을 병렬로 각각 판정해 units 로 묶는다(zip 1개 = 검토단위 1개).

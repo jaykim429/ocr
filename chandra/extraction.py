@@ -343,8 +343,15 @@ def classify_and_extract(
         cache_file = None
 
     kordoc_md = kordoc.to_markdown(path)  # 비지원/스캔본이면 None
-    # 스캔/라벨(tile)은 작은 글씨가 많아 더 고해상으로 렌더(판독 정확도↑)
-    images = render_file(path, max_pages=max_pages, target_long_side=3200 if tile else 2400)
+    # 스캔/라벨(tile)은 작은 글씨가 많아 더 고해상으로 렌더(판독 정확도↑).
+    # 텍스트레이어 PDF 는 텍스트를 kordoc 에서 정확히 얻으므로 보조 이미지는 저해상으로 충분(전송량↓).
+    if tile:
+        long_side = 3200
+    elif kordoc_md:
+        long_side = 1800
+    else:
+        long_side = 2400
+    images = render_file(path, max_pages=max_pages, target_long_side=long_side)
     if not images and not kordoc_md:
         return [{"doc_type": DOC_UNKNOWN, "error": "렌더/파싱 불가", "file": path}]
 

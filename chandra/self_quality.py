@@ -581,6 +581,14 @@ _SELF_QUALITY_JUDGE_SYSTEM = """당신은 식품 품질검토 전문가입니다
   반대로 미생물 안전성 핵심항목(세균수·대장균/대장균군, 해당 시 살모넬라·리스테리아 등)이
   명백히 빠졌을 때만 '누락'으로 보고 '검토필요'로 둡니다. 누락이 불확실하면 missing 에 넣지 말고
   reasons 에 '추가 확인 권장' 정도로만 적습니다. 누락만을 이유로 '부적합'으로 판정하지 않습니다.
+- ★evidence 의 '축산물가공품_여부'=true 이면(양념육·햄·소시지·유가공품·알가공품 등) 규격·자가품질
+  검사항목은 「축산물의 가공기준 및 성분규격」및 축산물 위생관리법 기준이 적용된다. 이때:
+    · 식품공전(I0930)에 규격이 없는 것이 정상이므로 '규격 못 찾음'을 흠으로 보지 말 것.
+    · 식품 기준의 미생물 핵심항목(대장균군·살모넬라·리스테리아 등)을 임의로 '필수 누락'으로
+      단정하지 말 것 — 축산물 자가품질검사 항목은 제품유형별로 다르며 성적서에 기재된 항목과
+      그 종합판정을 우선 존중한다. 성적서 종합판정이 적합이고 기재 항목이 모두 기준 이내면 적합.
+    · 항목 충분성에 의문이 있으면 missing 이 아니라 reasons 에 '축산물 고시 자가품질 항목 추가
+      확인 권장' 정도로만 적는다.
 - 서류 유효기간(발급일 기준)이 오늘 날짜 기준으로 유효한지 반영합니다. 유효기간은 식품유형별
   법정 자가품질검사 주기(시행규칙 [별표12] 제6호: 1/2/3/6개월)와 6개월 중 짧은 쪽으로 산정되어
   있습니다(evidence.유효기간.valid_months). 만료된 성적서는 최신 검사가 아니므로 부적합 사유가
@@ -655,6 +663,28 @@ def test_cycle_months(food_type: str | None) -> int | None:
     return cm.get("default", 1)
 
 
+# 축산물가공품(식육·유·알 가공품) 식품유형 키워드 — 식품공전(I0930)이 아니라 축산물 고시 적용
+_LIVESTOCK_FOOD_TYPE_KW = (
+    "양념육", "분쇄가공육", "갈비가공품", "햄", "소시지", "베이컨", "건조저장육",
+    "식육추출가공품", "식육함유가공품", "포장육", "식육간편조리세트", "식육가공품",
+    "발효유", "치즈", "버터", "아이스크림", "유가공품", "가공유", "농축유", "유크림",
+    "알가공품", "알함유가공품", "식용란",
+)
+
+
+def _is_livestock_product(food_type: str | None, *signals: str | None) -> bool:
+    """축산물가공품 여부. 시험검사목적·검사기관 지정번호에 '축산물'이 있거나
+    식품유형이 축산물 가공품 키워드면 True."""
+    for s in signals:
+        if s and "축산물" in s:
+            return True
+    if food_type:
+        ft = _norm(food_type)
+        if any(_norm(k) in ft for k in _LIVESTOCK_FOOD_TYPE_KW):
+            return True
+    return False
+
+
 def _live_food_spec(food_type: str | None) -> list[dict[str, Any]]:
     """식품안전나라 식품공전(I0930)에서 식품유형 규격을 조회(네트워크 실패는 무시)."""
     if not food_type:
@@ -714,10 +744,17 @@ def build_self_quality_evidence(
         for it in certificate.items
     ]
 
+    # 축산물가공품이면 식품공전(I0930)·시행규칙 별표12(식품위생법)가 아니라 축산물 고시·축산물
+    # 위생관리법이 적용되므로 별도 신호로 표기한다.
+    is_livestock = _is_livestock_product(
+        food_type, certificate.test_purpose, certificate.test_agency_designation_no
+    )
+
     cross = cross_check_documents(manufacture, certificate) if manufacture else None
     # 유효기간: 식품유형별 법정 검사주기(시행규칙 별표12 제6호)와 고객사 기준(6개월) 중
     # 더 엄격한 쪽(짧은 쪽)을 적용한다. 주기가 짧으면 더 빨리 만료(엄밀), 9개월(즉석판매)은 6으로 캡.
-    _cycle = test_cycle_months(food_type)
+    # 단, 축산물은 식품위생법 별표12 주기를 적용하지 않고 고객사 기준(6개월)을 사용한다.
+    _cycle = None if is_livestock else test_cycle_months(food_type)
     _valid_months = min(_cycle, 6) if _cycle else 6
     _vlabel = (
         f"자가품질검사성적서(식품유형 검사주기 {_cycle}개월 기준)"
@@ -739,6 +776,13 @@ def build_self_quality_evidence(
 
     return {
         "식품유형": food_type,
+        "축산물가공품_여부": is_livestock,
+        "규격적용_안내": (
+            "축산물가공품 — 규격·자가품질검사 항목은 「축산물의 가공기준 및 성분규격」 및 "
+            "축산물 위생관리법 기준 적용. 식품공전(I0930)에 규격이 없는 것이 정상이며, "
+            "성적서에 기재된 검사항목 외 미생물 등을 임의로 '필수 누락'으로 단정하지 말 것."
+            if is_livestock else None
+        ),
         "식품공전_규격_식품안전나라": {
             "출처": "식품안전나라 식품공전 OpenAPI(I0930)",
             "항목수": len(live_spec),

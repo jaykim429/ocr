@@ -177,6 +177,19 @@ def test_address_matches(q, addr, ok):
 # ---------------------------------------------------------------------------
 # 식품유형 합의 — 보고서 미등록 표기 vs 2개 서류 합의
 # ---------------------------------------------------------------------------
+@pytest.mark.parametrize("ft,purpose,desig,ok", [
+    ("양념육", None, None, True),
+    ("기타식물성유지", "축산물 | 자가품질위탁검사", None, True),
+    (None, None, "축산물 제26호", True),
+    ("떡류", None, None, False),
+    ("기타식물성유지", "자가품질위탁검사", "식품 제099호", False),
+])
+def test_is_livestock_product(ft, purpose, desig, ok):
+    from chandra.self_quality import _is_livestock_product
+
+    assert _is_livestock_product(ft, purpose, desig) is ok
+
+
 def test_food_type_consensus_override(monkeypatch):
     """보고서='육식간조리세트'(미등록) vs 성적서·표시사항='양념육' → 합의값 채택."""
     import chandra.foodsafety as fs

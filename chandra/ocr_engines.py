@@ -117,12 +117,13 @@ def _preprocess_variants(image: Image.Image):
     원본·그레이/대비·밝기·샤픈·단순이진화 + (OpenCV) CLAHE·Otsu·Adaptive·Sauvola.
     원본/그레이/이진화를 함께 비교하는 것이 안정적이라는 권장에 따른 구성.
     """
+    # 고가치 변형을 앞에 둔다 → variants=N 으로 잘라 쓸 때 가장 유용한 것부터 사용.
     rgb = image.convert("RGB")
     yield "original", rgb
     yield "autocontrast", ImageOps.autocontrast(rgb, cutoff=2)
-    yield "bright+", ImageEnhance.Brightness(rgb).enhance(1.35)
-    yield "contrast+", ImageEnhance.Contrast(rgb).enhance(1.6)
     yield "sharpen", ImageEnhance.Sharpness(rgb).enhance(2.2)
+    yield "contrast+", ImageEnhance.Contrast(rgb).enhance(1.6)
+    yield "bright+", ImageEnhance.Brightness(rgb).enhance(1.35)
     # 글씨 굵기 조절 — 어두운 글자 기준 MinFilter=굵게(끊긴 획 보강), MaxFilter=얇게(번짐 제거)
     gray = ImageOps.grayscale(ImageOps.autocontrast(rgb, cutoff=2))
     yield "thicken", gray.filter(ImageFilter.MinFilter(3)).convert("RGB")

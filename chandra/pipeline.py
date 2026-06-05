@@ -293,10 +293,10 @@ def _run_steps_for_product(
         if not label_ext:
             return {"status": "건너뜀 (표시사항 없음)"}
         ft = _resolve_food_type(by_type).get("value")
-        res = review_label_disclosures(label_ext, food_type=ft)
+        official_addr = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("address") or (mfr.address if mfr else None)
+        res = review_label_disclosures(label_ext, food_type=ft, official_address=official_addr)
 
         # 표시사항 주소가 공식(품목제조보고서) 주소와 다르면 자동 '적합' 통과 금지 — 반드시 검토 표시.
-        official_addr = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("address") or (mfr.address if mfr else None)
         addr_issues = [d for lab in labels
                        if (d := label_address_discrepancy(lab.get("address"), official_addr))]
         if addr_issues:

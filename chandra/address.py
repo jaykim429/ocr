@@ -161,15 +161,25 @@ def label_address_discrepancy(
     only_official = [t for t in tb if t not in ta]
     if not only_label and not only_official:
         return None
+    # 불일치가 '번지 등 숫자만' 다른지, '행정구역/도로명 명칭'이 다른지 구분한다.
+    diff_tokens = only_label + only_official
+    numeric_only = all(re.fullmatch(r"[\d\-]+", t) for t in diff_tokens) if diff_tokens else False
+    if numeric_only:
+        kind = "numeric"
+        hint = "번지 숫자 차이 — OCR 오인식과 실제 오기 모두 가능하므로 원본 이미지로 확인 필요"
+    else:
+        kind = "name"
+        hint = "행정구역/도로명 명칭 차이 — 실제 표시 오기 가능성이 높음(원본 이미지 확인)"
     detail = (
-        "표시사항 주소가 공식(품목제조보고서) 주소와 다릅니다 — "
+        f"표시사항 주소가 공식(품목제조보고서) 주소와 다릅니다 [{hint}] — "
         f"표시사항 '{label_addr}' ↔ 공식 '{official_addr}'"
-        + (f" (불일치 토큰: 표시사항={only_label} / 공식={only_official})" if (only_label or only_official) else "")
+        + (f" (차이: 표시사항={only_label} / 공식={only_official})" if (only_label or only_official) else "")
     )
     return {
         "label": label_addr,
         "official": official_addr,
         "label_only": only_label,
         "official_only": only_official,
+        "kind": kind,
         "detail": detail,
     }

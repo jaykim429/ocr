@@ -241,7 +241,69 @@ def _group_by_product(extractions: list[dict[str, Any]]) -> list[dict[str, Any]]
         clusters[cand[0]]["docs"].append(e)
     if leftover:
         clusters.append({"key": "", "name": "(제품 미상)", "report_nos": set(), "docs": leftover})
-    return clusters
+    return _merge_complementary_clusters(clusters)
+
+
+def _merge_complementary_clusters(clusters: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """같은 업체·주소인데 보고번호/제품명만 OCR 수준으로 다르고 문서종류가 상호배타(보완)인
+    클러스터를 1제품으로 병합한다(예: 성적서만 있는 고아 클러스터 + 보고서·라벨 클러스터).
+
+    '문서종류 상호배타'를 요구해, 같은 공장의 진짜 다른 SKU(양쪽 다 보고서를 가짐)는 합치지 않는다.
+    병합 시 보고번호·제품명 불일치를 doc_mismatch 로 남겨 검토필요로 노출한다.
+    """
+    from chandra.address import _edit_distance, normalize_address
+    from chandra.text_match import collapse, ratio
+
+    def biz(c):
+        return {collapse(d.get("business_name")) for d in c["docs"] if collapse(d.get("business_name"))}
+
+    def addrs(c):
+        return {normalize_address(d.get("address")) for d in c["docs"] if normalize_address(d.get("address"))}
+
+    def dtypes(c):
+        return {d.get("doc_type") for d in c["docs"]}
+
+    def report_nos(c):
+        return {r for d in c["docs"] if (r := _report_no_key(d))}
+
+    def names(c):
+        return {collapse(d.get("product_name")) for d in c["docs"] if collapse(d.get("product_name"))}
+
+    def addr_close(a: set[str], b: set[str]) -> bool:
+        return any(x == y or (min(len(x), len(y)) >= 12 and _edit_distance(x, y) <= 2) for x in a for y in b)
+
+    def should_merge(a, b) -> bool:
+        if dtypes(a) & dtypes(b):  # 핵심 안전장치: 문서종류가 겹치면 서로 다른 제품으로 본다
+            return False
+        if not addr_close(addrs(a), addrs(b)):  # 주소(공장)가 같아야 함
+            return False
+        ra, rb = report_nos(a), report_nos(b)
+        rn_close = any(_edit_distance(x, y) <= 1 for x in ra for y in rb) if (ra and rb) else False
+        nm_close = any(ratio(x, y) >= 0.5 for x in names(a) for y in names(b)) if (names(a) and names(b)) else False
+        return rn_close or nm_close
+
+    clusters = [dict(c) for c in clusters]
+    out: list[dict[str, Any]] = []
+    for c in clusters:
+        tgt = next((o for o in out if should_merge(o, c)), None)
+        if tgt is None:
+            out.append(c)
+            continue
+        # 병합: 문서 합치고 보고번호·제품명 불일치 기록
+        mismatch = tgt.get("doc_mismatch") or {}
+        rns = report_nos(tgt) | report_nos(c)
+        nms = {d.get("product_name") for d in (tgt["docs"] + c["docs"]) if d.get("product_name")}
+        if len(rns) > 1:
+            mismatch["품목제조보고번호"] = sorted(rns)
+        if len(nms) > 1:
+            mismatch["제품명"] = sorted(nms)
+        tgt["docs"] = tgt["docs"] + c["docs"]
+        tgt["report_nos"] = set(tgt.get("report_nos") or set()) | set(c.get("report_nos") or set())
+        if not tgt.get("key") and c.get("key"):
+            tgt["key"], tgt["name"] = c["key"], c.get("name")
+        if mismatch:
+            tgt["doc_mismatch"] = mismatch
+    return out
 
 
 def _run_steps_for_product(
@@ -590,13 +652,25 @@ def run_quality_review(
         nm = cluster.get("name") or "제품"
         _progress(f"품질 검토 중: {nm} (인허가·영양성분·자가품질·표시사항) — {idx}/{len(clusters)}")
         by_type, steps = _run_steps_for_product(cluster["docs"], today)
+        overall = _product_overall(steps)
+        flags = collect_flags(steps)
+        # 동일 업체·주소로 묶였으나 보고번호·제품명이 서류 간 불일치(OCR 오류 또는 다른 제품 서류 혼입)
+        mismatch = cluster.get("doc_mismatch")
+        if mismatch:
+            items = [f"{k} 불일치: {' / '.join(map(str, v))}" for k, v in mismatch.items()]
+            flags.insert(0, {"step": "서류 일관성", "verdict": "검토필요",
+                             "items": ["동일 업체·주소 서류로 묶였으나 식별정보가 다릅니다 — 같은 제품의 "
+                                       "서류 오류이거나 다른 제품 서류가 섞였을 수 있어 확인 필요"] + items})
+            if overall == "적합":
+                overall = "검토필요"
         products.append({
             "product": cluster.get("name") or (by_type.get(DOC_LABEL, {}) or {}).get("product_name"),
             "basic_info": _basic_info(by_type),
             "food_type_check": _resolve_food_type(by_type),
             "documents_found": list(by_type.keys()),
-            "overall": _product_overall(steps),
-            "flags": collect_flags(steps),
+            "overall": overall,
+            "doc_mismatch": mismatch,
+            "flags": flags,
             "steps": steps,
         })
 

@@ -55,6 +55,37 @@ def test_group_merged_two_products_split_by_report_no():
     assert len(cl) == 2
 
 
+def test_merge_complementary_orphan_cert():
+    """성적서(보고번호 ...831)가 보고서·라벨(...832)과 업체·주소 같고 문서종류 보완적이면
+    1제품으로 병합 + 보고번호/제품명 불일치 기록(OCR 1자리 차이)."""
+    from chandra.pipeline import _group_by_product
+
+    addr = "충청남도 당진시 송악읍 농장길 336-66"
+    ext = [
+        {"doc_type": DOC_SELF_QUALITY, "product_name": "감단 민물장어 양념구이", "manufacture_report_no": "202406940831", "address": addr},
+        {"doc_type": DOC_PRODUCT_REPORT, "product_name": "간장 양념 민물장어구이", "manufacture_report_no": "202406940832", "address": addr},
+        {"doc_type": DOC_LABEL, "product_name": "간장 양념 민물장어구이", "manufacture_report_no": "202406940832", "address": "충남 당진시 송악읍 농장길 336-35"},
+    ]
+    cl = _group_by_product(ext)
+    assert len(cl) == 1
+    assert cl[0].get("doc_mismatch")  # 보고번호 불일치 기록됨
+
+
+def test_no_merge_two_complete_products_same_factory():
+    """같은 공장의 진짜 다른 SKU(둘 다 보고서 보유)는 보고번호 인접해도 병합하지 않는다."""
+    from chandra.pipeline import _group_by_product
+
+    addr = "충청남도 당진시 송악읍 농장길 336-66"
+    ext = [
+        {"doc_type": DOC_PRODUCT_REPORT, "product_name": "제품가", "manufacture_report_no": "202406940831", "address": addr},
+        {"doc_type": DOC_SELF_QUALITY, "product_name": "제품가", "manufacture_report_no": "202406940831", "address": addr},
+        {"doc_type": DOC_PRODUCT_REPORT, "product_name": "제품나", "manufacture_report_no": "202406940832", "address": addr},
+        {"doc_type": DOC_SELF_QUALITY, "product_name": "제품나", "manufacture_report_no": "202406940832", "address": addr},
+    ]
+    cl = _group_by_product(ext)
+    assert len(cl) == 2
+
+
 def test_group_floating_label_attaches_by_address():
     """제품명 없는 표시사항이 같은 공장주소의 '라벨 없는' 제품에 붙는다."""
     from chandra.pipeline import _group_by_product

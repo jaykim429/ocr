@@ -389,12 +389,13 @@ def classify_and_extract(
         from chandra.ocr_engines import ocr_image, ocr_image_best
 
         for idx, img in enumerate(images):
-            # 스캔/라벨(tile)의 앞 2페이지는 전처리 다변형(밝기·대비·샤픈·글씨굵기) 중 가장 잘
-            # 읽힌 결과를 채택해 OCR 오인식을 줄인다. 그 외/뒷페이지는 비용 절감 위해 원본 1회.
-            if tile and idx < 2:
-                text, _variant = ocr_image_best(img, variants=8)
-            else:
-                text = ocr_image(img)
+            # 기본은 단일 OCR(빠름). 스캔 라벨 첫 페이지인데 거의 안 읽히면(저화질) 그때만
+            # 전처리 다변형(밝기·대비·글씨굵기) 보강으로 1회 재시도(EasyOCR CPU 비용 절감).
+            text = ocr_image(img)
+            if tile and idx == 0 and (not text or len(text.strip()) < 30):
+                best, _variant = ocr_image_best(img, variants=4)
+                if best and len(best) > len(text or ""):
+                    text = best
             if text:
                 ocr_blocks.append(f"[페이지 {idx + 1} OCR]\n{text}")
     if kordoc_md:

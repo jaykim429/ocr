@@ -550,11 +550,20 @@ def run_quality_review(
     out_dir: str | Path,
     today: date | None = None,
     max_pages: int = 6,
+    on_progress: Any = None,
 ) -> dict[str, Any]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
+    def _progress(text: str) -> None:
+        if on_progress:
+            try:
+                on_progress(text)
+            except Exception:  # noqa: BLE001 - 진행표시 실패는 검토에 영향 없음
+                pass
+
     files = _dedup_files(_gather_files(input_path, out))
+    _progress(f"제출 서류 판독 중 (총 {len(files)}건)")
 
     def _extract_one(f: Path) -> list[dict[str, Any]]:
         # 이미지(스캔/라벨)는 작은 글씨가 많아 처음부터 타일 확대 패스로 1회 처리(Gemma 호출 절감).
@@ -575,8 +584,11 @@ def run_quality_review(
         nested = [_extract_one(f) for f in files]
     extractions = [e for sub in nested for e in sub]
 
+    clusters = _group_by_product(extractions)
     products: list[dict[str, Any]] = []
-    for cluster in _group_by_product(extractions):
+    for idx, cluster in enumerate(clusters, 1):
+        nm = cluster.get("name") or "제품"
+        _progress(f"품질 검토 중: {nm} (인허가·영양성분·자가품질·표시사항) — {idx}/{len(clusters)}")
         by_type, steps = _run_steps_for_product(cluster["docs"], today)
         products.append({
             "product": cluster.get("name") or (by_type.get(DOC_LABEL, {}) or {}).get("product_name"),
@@ -595,6 +607,7 @@ def run_quality_review(
         if e.get("doc_type") == DOC_UNKNOWN or e.get("error")
     ]
 
+    _progress("종합 판정 정리 중")
     report = {
         "input": str(input_path),
         "files": [str(f) for f in files],
@@ -615,6 +628,7 @@ def run_quality_review_batch(
     today: date | None = None,
     max_pages: int = 6,
     max_workers: int = 4,
+    on_progress: Any = None,
 ) -> dict[str, Any]:
     """여러 검토대상(zip 등)을 병렬로 각각 판정해 units 로 묶는다(zip 1개 = 검토단위 1개).
 
@@ -625,11 +639,16 @@ def run_quality_review_batch(
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     inputs = [Path(p) for p in inputs]
+    _multi = len(inputs) > 1
 
     def one(idx: int, p: Path) -> dict[str, Any]:
         sub = out / f"unit{idx}_{p.stem}"
+        # 검토단위가 여러 개면 단위별 진행표시에 단위명을 접두로 붙인다.
+        unit_cb = None
+        if on_progress:
+            unit_cb = (lambda t, _n=p.stem: on_progress(f"[{_n}] {t}")) if _multi else on_progress
         try:
-            rep = run_quality_review(p, sub, today=today, max_pages=max_pages)
+            rep = run_quality_review(p, sub, today=today, max_pages=max_pages, on_progress=unit_cb)
             return {"name": p.stem, "input": str(p), **rep}
         except Exception as exc:  # noqa: BLE001 - 한 건 실패가 전체를 막지 않도록
             return {"name": p.stem, "input": str(p), "error": str(exc),

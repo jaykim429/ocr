@@ -38,6 +38,11 @@ def _conn() -> sqlite3.Connection:
             created TEXT, started TEXT, finished TEXT, error TEXT, result_json TEXT
         )"""
     )
+    # 진행 단계 표시용 컬럼(기존 DB 호환 위해 ALTER 로 추가)
+    try:
+        conn.execute("ALTER TABLE jobs ADD COLUMN progress TEXT")
+    except sqlite3.OperationalError:
+        pass  # 이미 존재
     return conn
 
 
@@ -51,7 +56,12 @@ def create_job(input_name: str, owner: str) -> str:
     return job_id
 
 
-_COLS = {"status", "started", "finished", "error"}
+_COLS = {"status", "started", "finished", "error", "progress"}
+
+
+def set_progress(job_id: str, text: str) -> None:
+    """현재 진행 단계 안내문을 갱신(폴링으로 노출)."""
+    _set(job_id, progress=text)
 
 
 def _set(job_id: str, **kw: Any) -> None:
@@ -71,10 +81,12 @@ def _set(job_id: str, **kw: Any) -> None:
 
 
 def _row_to_job(row: sqlite3.Row, with_result: bool = True) -> dict[str, Any]:
+    keys = row.keys()
     job = {
         "id": row["id"], "status": row["status"], "owner": row["owner"],
         "input_name": row["input_name"], "created": row["created"],
         "started": row["started"], "finished": row["finished"], "error": row["error"],
+        "progress": row["progress"] if "progress" in keys else None,
     }
     if with_result:
         job["result"] = json.loads(row["result_json"]) if row["result_json"] else None
@@ -121,10 +133,13 @@ def run_job(job_id: str, inputs: list[Path], out_dir: Path, today: date | None =
     """백그라운드 실행 본체. inputs = 검토대상 목록(zip/폴더). 여러 개면 병렬 판정."""
     from chandra.pipeline import run_quality_review_batch
 
-    _set(job_id, status="running", started=_now())
+    _set(job_id, status="running", started=_now(), progress="제출 서류 판독 준비 중…")
     try:
-        report = run_quality_review_batch(inputs, out_dir, today=today)
-        _set(job_id, status="done", result=report, finished=_now())
+        report = run_quality_review_batch(
+            inputs, out_dir, today=today,
+            on_progress=lambda text: set_progress(job_id, text),
+        )
+        _set(job_id, status="done", result=report, finished=_now(), progress="검토 완료")
     except Exception as exc:  # noqa: BLE001
         _set(job_id, status="error", error=str(exc), finished=_now())
 

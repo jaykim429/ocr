@@ -155,7 +155,8 @@ function ReviewProgress({ job }: { job: any }) {
   const elapsed = start ? Math.max(0, (Date.now() - new Date(start).getTime()) / 1000) : tick;
   // 예상 소요 ~120초로 92%까지 점근, 완료 시 100%
   const pct = job.status === "done" ? 100 : Math.min(92, Math.round((1 - Math.exp(-elapsed / 60)) * 100));
-  const stage = STAGES[Math.min(STAGES.length - 1, Math.floor(elapsed / 24))];
+  // 서버가 보고하는 실제 단계(job.progress)를 우선 표시 — 없으면 경과시간 기반 안내로 폴백
+  const stage = job.progress || STAGES[Math.min(STAGES.length - 1, Math.floor(elapsed / 24))];
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-sm">

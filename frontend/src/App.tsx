@@ -78,7 +78,8 @@ function Shell({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState("review");
   const [agencies, setAgencies] = useState<any>(null);
   const [job, setJob] = useState<any>(null);
-  useEffect(() => { api.getAgencies().then(setAgencies); }, []);
+  // 401(세션 만료)이면 getAgencies 가 throw → 조용히 깨진 화면 대신 로그아웃 처리
+  useEffect(() => { api.getAgencies().then(setAgencies).catch(() => onLogout()); }, [onLogout]);
 
   // 검토 잡 폴링은 Shell(항상 마운트)에서 — 탭을 이동했다 와도 계속 진행/갱신됨
   useEffect(() => {

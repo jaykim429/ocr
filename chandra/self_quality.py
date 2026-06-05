@@ -222,13 +222,11 @@ def parse_criteria_text(text: str) -> Criteria | None:
         m_val = grab("m")
         big_m = re.search(r"M\s*=\s*([\d.,]+(?:\s*[xX×]\s*10\^?\d+)?)", t)
         big_m_val = parse_number(big_m.group(1)) if big_m else None
-        if n is not None and m_val is not None:
-            return MicroCriteria(
-                n=int(n),
-                c=int(c) if c is not None else 0,
-                m=m_val,
-                M=big_m_val,
-            )
+        # n·c·m 이 모두 읽혀야 신뢰 가능한 샘플링플랜이다. c 를 못 읽었는데 0 으로 가정하면
+        # 한계 허용수가 0 이 되어 한 건만 마진이어도 거짓 부적합이 난다 → c 없으면 플랜을 만들지
+        # 않고(None) 상위에서 판정불가로 라우팅한다.
+        if n is not None and m_val is not None and c is not None:
+            return MicroCriteria(n=int(n), c=int(c), m=m_val, M=big_m_val)
 
     # 2) 불검출/음성 형태
     if any(kw in t for kw in ("불검출", "음성", "검출되어서는", "n.d", "N.D", "陰性")):
@@ -419,9 +417,11 @@ def cross_check_documents(
         matches.append(FieldMatch(field_name, mv, cv, ok))
         if not ok:
             reasons.append(f"{field_name} 불일치: 보고서='{mv}' vs 성적서='{cv}'")
-    consistent = all(m.match for m in matches) if matches else False
+    # 비교 가능한 공통 필드가 하나도 없으면 '불일치(False)'가 아니라 '판정 불가(None)'다.
+    # (양쪽 모두 OCR 누락 등) — False 로 두면 불필요한 검토필요 알람이 뜬다.
+    consistent = (all(m.match for m in matches) if matches else None)
     if not matches:
-        reasons.append("교차대조할 공통 필드 없음")
+        reasons.append("교차대조할 공통 필드 없음(판정 불가)")
     return CrossCheckResult(matches=matches, consistent=consistent, reasons=reasons)
 
 
@@ -527,7 +527,7 @@ def review_self_quality(
         or any(ev.verdict_mismatch for ev in evaluations)
         or any(ev.computed_verdict == "판정불가" for ev in evaluations)
         or std is None
-        or (cross is not None and not cross.consistent)
+        or (cross is not None and cross.consistent is False)
     )
     if has_fail:
         overall = "부적합"
@@ -590,10 +590,9 @@ _SELF_QUALITY_JUDGE_SYSTEM = """당신은 식품 품질검토 전문가입니다
       그 종합판정을 우선 존중한다. 성적서 종합판정이 적합이고 기재 항목이 모두 기준 이내면 적합.
     · 항목 충분성에 의문이 있으면 missing 이 아니라 reasons 에 '축산물 고시 자가품질 항목 추가
       확인 권장' 정도로만 적는다.
-- 서류 유효기간(발급일 기준)이 오늘 날짜 기준으로 유효한지 반영합니다. 유효기간은 식품유형별
-  법정 자가품질검사 주기(시행규칙 [별표12] 제6호: 1/2/3/6개월)와 6개월 중 짧은 쪽으로 산정되어
-  있습니다(evidence.유효기간.valid_months). 만료된 성적서는 최신 검사가 아니므로 부적합 사유가
-  됩니다. reasons 에 적용 주기(예: '식품유형 검사주기 N개월')와 발급일·만료일·잔여일을 명시하세요.
+- 서류 유효기간은 발급일 기준 6개월(현대홈쇼핑 입점 서류 기준)입니다(evidence.유효기간). 오늘
+  날짜 기준으로 만료(valid=false)면 최신 검사가 아니므로 부적합 사유가 됩니다. reasons 에
+  발급일·만료일·잔여일을 명시하세요.
 - 품목제조보고서와 자가품질성적서의 교차대조(제품명/식품유형/보고번호/영업자) 결과를 반영합니다.
   단, 두 서류는 스캔본 OCR을 거쳐 한글 글자 오인식이 있을 수 있습니다. 품목제조보고번호 등
   숫자 식별자가 일치하거나 명칭이 유사(오인식 수준 차이)하면 '동일'로 보고, 명백히 다른
@@ -659,6 +658,9 @@ def test_cycle_months(food_type: str | None) -> int | None:
     ft = _norm(food_type)
     if any(_norm(k) in ft for k in cm.get("주류_keywords", ["주류"])):
         return cm.get("주류", 6)
+    for kw in cm.get("9_즉석판매제조가공업", []):
+        if _norm(kw) and _norm(kw) in ft:
+            return 9
     for months in ("2", "3"):
         for kw in cm.get(months, []):
             if _norm(kw) and _norm(kw) in ft:
@@ -754,18 +756,11 @@ def build_self_quality_evidence(
     )
 
     cross = cross_check_documents(manufacture, certificate) if manufacture else None
-    # 유효기간: 식품유형별 법정 검사주기(시행규칙 별표12 제6호)와 고객사 기준(6개월) 중
-    # 더 엄격한 쪽(짧은 쪽)을 적용한다. 주기가 짧으면 더 빨리 만료(엄밀), 9개월(즉석판매)은 6으로 캡.
-    # 단, 축산물은 식품위생법 별표12 주기를 적용하지 않고 고객사 기준(6개월)을 사용한다.
-    _cycle = None if is_livestock else test_cycle_months(food_type)
-    _valid_months = min(_cycle, 6) if _cycle else 6
-    _vlabel = (
-        f"자가품질검사성적서(식품유형 검사주기 {_cycle}개월 기준)"
-        if _cycle and _cycle <= 6
-        else "자가품질검사성적서(6개월 기준)"
-    )
+    # 유효기간: 발급일 기준 6개월(현대홈쇼핑 입점 서류 기준). 식품유형별 법정 검사주기는
+    # 참고 정보(자가품질검사주기_개월)로만 제공하고 유효기간 판정엔 쓰지 않는다.
     validity = check_validity(
-        certificate.issue_date, today=today, valid_months=_valid_months, label=_vlabel
+        certificate.issue_date, today=today, valid_months=6,
+        label="자가품질검사성적서(발급일+6개월)",
     )
     agency = verify_agency(
         certificate.test_agency,

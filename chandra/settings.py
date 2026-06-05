@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     REVIEW_MODEL_NAME: str = "google/gemma-4-26B-A4B-it"
     REVIEW_MAX_OUTPUT_TOKENS: int = 8192
     REVIEW_TIMEOUT_SECONDS: float = 120.0
+    REVIEW_MAX_CONCURRENCY: int = 12  # 원격 VLM 동시 호출 상한(중첩 스레드풀 과부하 방지)
     REVIEW_INCLUDE_IMAGE: bool = True
     REVIEW_MAX_INPUT_CHARS: int = 60000
 

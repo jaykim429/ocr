@@ -24,7 +24,7 @@ export default function BusinessTab() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
-  const [open, setOpen] = useState<number | null>(null);
+  const [open, setOpen] = useState<string | null>(null);  // 펼친 행의 안정 키(영업등록번호)
 
   const search = async () => {
     if (!q.trim() && !lic.trim() && !ind && !region) {
@@ -103,9 +103,10 @@ export default function BusinessTab() {
             <tbody className="divide-y divide-slate-100">
               {rows.length === 0 ? (
                 <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-400">결과 없음</td></tr>
-              ) : rows.map((r: any, i: number) => (
-                <FragmentRow key={i} r={r} open={open === i} onToggle={() => setOpen(open === i ? null : i)} />
-              ))}
+              ) : rows.map((r: any, i: number) => {
+                const rk = String(r.license_no || i);
+                return <FragmentRow key={rk} r={r} open={open === rk} onToggle={() => setOpen(open === rk ? null : rk)} />;
+              })}
             </tbody>
           </table>
         </div>

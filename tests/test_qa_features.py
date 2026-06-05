@@ -123,24 +123,28 @@ def test_basic_info_source_priority(monkeypatch):
 # ---------------------------------------------------------------------------
 # 자가품질 검사주기 (별표12)
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize("ft,months", [("떡류", 3), ("가공두유", 2), ("양념육", 1), ("탁주", 6), ("조미건어포", 3)])
+@pytest.mark.parametrize("ft,months", [("떡류", 3), ("가공두유", 2), ("양념육", 1), ("탁주", 6), ("조미건어포", 3), ("즉석판매제조가공", 9)])
 def test_test_cycle_months(ft, months):
     from chandra.self_quality import test_cycle_months
 
     assert test_cycle_months(ft) == months
 
 
-def test_validity_uses_food_type_cycle(monkeypatch):
-    """유효기간은 식품유형 검사주기(min 6개월)로 산정 — 비:너지(기타식물성유지=1개월)."""
+def test_validity_fixed_six_months(monkeypatch):
+    """유효기간은 발급일+6개월 고정(현대홈쇼핑 기준) — 식품유형 주기와 무관."""
     import chandra.foodsafety as fs
     from datetime import date
     from chandra.self_quality import build_self_quality_evidence, QualityCertificate
 
     monkeypatch.setattr(fs, "search_food_spec", lambda *a, **k: [])
-    cert = QualityCertificate(food_type="기타식물성유지", issue_date="2025-11-14")
+    cert = QualityCertificate(food_type="기타식물성유지", issue_date="2026-04-01")
     ev = build_self_quality_evidence(cert, None, None, today=date(2026, 6, 5))
-    assert ev["유효기간"]["valid_months"] == 1
-    assert ev["유효기간"]["valid"] is False  # 1개월 주기면 2026-06-05엔 만료
+    assert ev["유효기간"]["valid_months"] == 6
+    assert ev["유효기간"]["valid"] is True  # 4/1 + 6개월 = 10/1, 6/5엔 유효
+    # 발급 7개월 전이면 만료
+    cert2 = QualityCertificate(food_type="기타식물성유지", issue_date="2025-11-01")
+    ev2 = build_self_quality_evidence(cert2, None, None, today=date(2026, 6, 5))
+    assert ev2["유효기간"]["valid"] is False
 
 
 def test_self_tested_when_agency_is_manufacturer(monkeypatch):
@@ -241,14 +245,17 @@ def test_is_livestock_product(ft, purpose, desig, ok):
 
 
 @pytest.mark.parametrize("label,official,flagged", [
-    # 읍 이름 오기(내수↔수내) → 검토 대상
+    # 읍 이름 오기(내수↔수내, 2글자 전치) → 검토 대상
     ("충북 청주시 청원구 수내읍 청암로 192-21", "충청북도 청주시 청원구 내수읍 청암로 192-21", True),
     # 시도 약칭 차이만 → 동일(이상 없음)
     ("충북 청주시 청원구 내수읍 청암로 192-21", "충청북도 청주시 청원구 내수읍 청암로 192-21", False),
     # 괄호 건물명만 추가 → 동일
     ("경상북도 칠곡군 지천면 신동로7길 92(동명동)", "경상북도 칠곡군 지천면 신동로7길 92", False),
-    # 번지 다름 → 검토 대상
-    ("서울 강남구 테헤란로 10", "서울 강남구 테헤란로 12", True),
+    # 1글자 차이(1↔니, 0↔2)는 OCR 오인식으로 보고 비플래그(이미지 VLM 판단에 위임)
+    ("충북 청주시 청원구 오창읍 각리1길 60", "충북 청주시 청원구 오창읍 각리니길 60", False),
+    ("서울 강남구 테헤란로 10", "서울 강남구 테헤란로 12", False),
+    # 2글자 이상 번지 차이 → 검토 대상
+    ("서울 강남구 테헤란로 10", "서울 강남구 테헤란로 25", True),
 ])
 def test_label_address_discrepancy(label, official, flagged):
     from chandra.address import label_address_discrepancy
@@ -264,6 +271,24 @@ def test_food_type_consensus_override(monkeypatch):
     monkeypatch.setattr(fs, "search_food_spec", lambda *a, **k: [])  # 둘 다 미등록
     by_type = {
         DOC_PRODUCT_REPORT: {"food_type": "육식간조리세트"},
+        DOC_SELF_QUALITY: {"food_type": "양념육"},
+        DOC_LABEL: {"food_type": "양념육"},
+    }
+    r = pipeline._resolve_food_type(by_type)
+    assert r["value"] == "양념육"
+    assert r["consensus_override"] is True
+
+
+def test_food_type_consensus_override_even_if_report_registered(monkeypatch):
+    """보고서 값이 식품공전 등록 표기여도(식육간편조리세트) 2개 서류 합의(양념육)가 이기게."""
+    import chandra.foodsafety as fs
+    from chandra import pipeline
+
+    # '식육간편조리세트'는 등록된 것처럼, '양념육'은 미등록처럼 응답
+    monkeypatch.setattr(fs, "search_food_spec",
+                        lambda t, *a, **k: [{"product_type": "식육간편조리세트"}] if "간편" in t else [])
+    by_type = {
+        DOC_PRODUCT_REPORT: {"food_type": "식육간편조리세트"},
         DOC_SELF_QUALITY: {"food_type": "양념육"},
         DOC_LABEL: {"food_type": "양념육"},
     }

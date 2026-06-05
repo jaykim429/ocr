@@ -142,6 +142,22 @@ def verify_addresses(a: str | None, b: str | None) -> AddressMatch:
     return via if via is not None else addresses_match(a, b)
 
 
+def _edit_distance(a: str, b: str) -> int:
+    """레벤슈타인 거리(짧은 토큰용). OCR 1글자 오인식 판별에 쓴다."""
+    if a == b:
+        return 0
+    la, lb = len(a), len(b)
+    if not la or not lb:
+        return la or lb
+    prev = list(range(lb + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[lb]
+
+
 def label_address_discrepancy(
     label_addr: str | None, official_addr: str | None
 ) -> dict[str, Any] | None:
@@ -160,6 +176,11 @@ def label_address_discrepancy(
     only_label = [t for t in ta if t not in tb]
     only_official = [t for t in tb if t not in ta]
     if not only_label and not only_official:
+        return None
+    # 차이가 토큰 1:1 이고 그 두 토큰이 1글자 차이뿐이면(예: '각리1길'↔'각리니길', '1'↔'니')
+    # 한쪽 OCR/추출 오인식일 가능성이 매우 높다 → 결정적 플래그를 띄우지 않고(None) 4단계
+    # VLM 의 '라벨 이미지 vs 공식주소' 대조에 판단을 맡긴다. (수내↔내수 같은 2글자+ 차이는 유지)
+    if len(only_label) == 1 and len(only_official) == 1 and _edit_distance(only_label[0], only_official[0]) <= 1:
         return None
     # 불일치가 '번지 등 숫자만' 다른지, '행정구역/도로명 명칭'이 다른지 구분한다.
     diff_tokens = only_label + only_official

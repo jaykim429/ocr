@@ -112,7 +112,6 @@ def _to_certificate(ext: dict[str, Any] | None) -> QualityCertificate | None:
         product_name=ext.get("product_name"),
         food_type=ext.get("food_type"),
         manufacture_report_no=ext.get("manufacture_report_no"),
-        report_no=ext.get("report_no"),
         test_agency=ext.get("test_agency"),
         test_agency_designation_no=ext.get("test_agency_designation_no"),
         test_agency_tel=ext.get("test_agency_tel"),
@@ -186,13 +185,24 @@ def _group_by_product(extractions: list[dict[str, Any]]) -> list[dict[str, Any]]
         pn = collapse(e.get("product_name"))
         rn = _report_no_key(e)
         target = None
-        for c in clusters:
-            if rn and rn in c["report_nos"]:  # 보고번호 일치 = 동일 제품(이름 달라도)
-                target = c
-                break
-            if pn and c["key"] and (pn == c["key"] or pn in c["key"] or c["key"] in pn or ratio(pn, c["key"]) >= 0.7):
-                target = c
-                break
+        # 1) 보고번호(강한 키) 일치 = 동일 제품(이름 달라도)
+        if rn:
+            target = next((c for c in clusters if rn in c["report_nos"]), None)
+        # 2) 이름 유사도: 첫 매칭이 아니라 '가장 잘 맞는' 클러스터를 고른다.
+        #    부분 포함은 짧은 이름의 오결합(예: '한과'⊂'전통한과세트')을 막기 위해
+        #    양쪽 길이 4자 이상일 때만 인정한다.
+        if target is None and pn:
+            best, best_s = None, 0.0
+            for c in clusters:
+                if not c["key"]:
+                    continue
+                s = ratio(pn, c["key"])
+                if (pn == c["key"] or pn in c["key"] or c["key"] in pn) and min(len(pn), len(c["key"])) >= 4:
+                    s = max(s, 0.9)
+                if s > best_s:
+                    best, best_s = c, s
+            if best is not None and best_s >= 0.7:
+                target = best
         if target is None:
             target = {"key": pn, "name": e.get("product_name"), "report_nos": set(), "docs": []}
             clusters.append(target)
@@ -211,13 +221,17 @@ def _group_by_product(extractions: list[dict[str, Any]]) -> list[dict[str, Any]]
     # 다제품: 이름·보고번호가 안 읽힌 표시사항 등은 '소재지(공장주소)'로 매칭해 붙인다.
     # 같은 주소 클러스터가 여럿이면, 아직 그 문서종류(예: 표시사항)가 없는 클러스터를 우선.
     def _addr_key(e: dict[str, Any]) -> str:
-        return collapse(e.get("address"))[:20]  # 정규화 후 앞부분(도+시군구+도로명 수준)
+        return collapse(e.get("address"))  # 전체 정규화 주소(부분 prefix 오결합 방지)
+
+    def _addr_hit(ak: str, addrs: set[str]) -> bool:
+        # 도+시군구 수준의 짧은 공통 prefix 오결합을 막기 위해 겹치는 길이가 12자 이상일 때만 인정.
+        return any((ak in a or a in ak) and min(len(ak), len(a)) >= 12 for a in addrs)
 
     cluster_addrs = [{_addr_key(d) for d in c["docs"] if _addr_key(d)} for c in clusters]
     leftover: list[dict[str, Any]] = []
     for e in floating:
         ak = _addr_key(e)
-        cand = [i for i, addrs in enumerate(cluster_addrs) if ak and any(ak in a or a in ak for a in addrs)]
+        cand = [i for i, addrs in enumerate(cluster_addrs) if ak and _addr_hit(ak, addrs)]
         if not cand:
             leftover.append(e)
             continue
@@ -477,9 +491,11 @@ def _resolve_food_type(by_type: dict[str, dict[str, Any]]) -> dict[str, Any]:
 
     registered = _registered(value)
     consensus_override = False
-    # 최우선(보고서) 값이 식품공전 미등록인데, 다른 서류 2개 이상이 합의한 표기가 있으면
-    # 그 합의값을 채택한다(예: 보고서 OCR '육식간조리세트' vs 성적서·표시사항 '양념육').
-    if registered is False and mismatch:
+    # 다른 서류 2개 이상이 같은 표기로 합의했는데 최우선(보고서) 단독값이 그와 다르면 합의값을
+    # 채택한다. 보고서의 '품목의 유형'이 안내문구('주원료의 유형(식육간편조리세트의 경우만…)')와
+    # 혼동돼 오추출되는 사례가 있어, 독립 서류 2건의 합의를 단독값보다 신뢰한다(보고서 값이 식품공전에
+    # 등록된 표기여도 적용). mismatch 경고는 그대로 노출돼 담당자가 확인한다.
+    if mismatch:
         counts = Counter(collapse(v) for _, v in cands)
         best_norm, best_n = counts.most_common(1)[0]
         if best_n >= 2 and best_n > counts[collapse(value)]:

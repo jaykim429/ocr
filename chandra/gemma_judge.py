@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from typing import Any
 
 from openai import OpenAI
@@ -18,6 +19,12 @@ from PIL import Image
 
 from chandra.review import image_to_data_url
 from chandra.settings import settings
+
+# 원격 Gemma 엔드포인트 동시 호출 상한 — 파일 추출/단계/배치의 중첩 스레드풀이 한꺼번에
+# 수십 건을 던져 타임아웃/거부를 유발하지 않도록 전역으로 묶는다.
+_VLM_SEMAPHORE = threading.BoundedSemaphore(
+    max(1, int(getattr(settings, "REVIEW_MAX_CONCURRENCY", 12)))
+)
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -72,15 +79,16 @@ def judge_json(
             {"type": "image_url", "image_url": {"url": image_to_data_url(img)}}
         )
 
-    completion = client.chat.completions.create(
-        model=model_name or settings.REVIEW_MODEL_NAME,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": content},
-        ],
-        max_tokens=max_output_tokens or settings.REVIEW_MAX_OUTPUT_TOKENS,
-        temperature=temperature,
-    )
+    with _VLM_SEMAPHORE:
+        completion = client.chat.completions.create(
+            model=model_name or settings.REVIEW_MODEL_NAME,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": content},
+            ],
+            max_tokens=max_output_tokens or settings.REVIEW_MAX_OUTPUT_TOKENS,
+            temperature=temperature,
+        )
     raw = completion.choices[0].message.content or ""
     data = _extract_json(raw)
     data.setdefault("_raw", raw)

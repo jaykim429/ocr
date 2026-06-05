@@ -68,7 +68,7 @@ export default function LawsTab() {
       <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-sm">
         {filtered.map((law, i) => (
           <button
-            key={i}
+            key={law.seq || law.name || i}
             onClick={() => law.seq && setSel(law)}
             className={`block w-full px-5 py-4 text-left ${law.seq ? "hover:bg-slate-50" : "cursor-default opacity-70"}`}
           >
@@ -406,10 +406,14 @@ function DiffView({ currentSeq, upcomingSeq, target }: { currentSeq: string; upc
   up.articles.filter((a: any) => a.type === "article").forEach((a: any) => upMap.set(keyOf(a), a));
   const norm = (s?: string) => (s || "").replace(/\s+/g, " ").trim();
 
-  // 합집합 키를 조문번호 순으로 정렬, 내용이 다른(또는 신설/삭제) 조문만 추림
+  // 합집합 키를 조문번호 순으로 정렬, 내용이 다른(또는 신설/삭제) 조문만 추림.
+  // 조문번호가 숫자가 아닐 수 있으므로(별표 등) NaN 가드 후 문자열 비교로 폴백.
+  const numOr = (v: string) => { const n = Number(v); return Number.isNaN(n) ? null : n; };
   const keys = Array.from(new Set([...curMap.keys(), ...upMap.keys()])).sort((a, b) => {
-    const [an, ab] = a.split("-").map(Number); const [bn, bb] = b.split("-").map(Number);
-    return an - bn || (ab || 0) - (bb || 0);
+    const [an, ab] = a.split("-"); const [bn, bb] = b.split("-");
+    const na = numOr(an), nb = numOr(bn);
+    if (na === null || nb === null) return a.localeCompare(b);
+    return na - nb || (numOr(ab) || 0) - (numOr(bb) || 0);
   });
   const diffs = keys
     .map((k) => ({ k, c: curMap.get(k), u: upMap.get(k) }))

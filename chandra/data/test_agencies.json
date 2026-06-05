@@ -1,0 +1,2064 @@
+{
+  "_meta": {
+    "description": "식약처 시험검사기관 현황 (분야: 식품, 위생용품, 축산물)",
+    "source": "parsed from Excel: 시험검사기관+현황(게시용)_20260424.xlsx",
+    "count": 134
+  },
+  "agencies": [
+    {
+      "designation_no": "제1호",
+      "name": "한국식품산업협회 부설 한국식품과학연구원",
+      "representative": "박진선",
+      "address": "경기도 의왕시 봇들로 50(포일동)",
+      "tel": "02-3470-8200",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사), 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "방사능",
+        "유전자변형식품 확인",
+        "식품조사처리확인"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제26호",
+      "name": "한국식품산업협회 부산지원",
+      "representative": "박진선",
+      "address": "부산광역시 남구 수영로 309(대연동)",
+      "tel": "051-628-7915",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사), 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물(IC분석 항목이 포함된 식품첨가물 제외), 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "유전자변형식품 확인"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제35호",
+      "name": "(주)한국분석기술연구원",
+      "representative": "이태훈",
+      "address": "부산광역시 동구 대영로 267 해광빌딩(초량동)",
+      "tel": "051-466-1231",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사), 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "유전자변형식품 확인"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제38호",
+      "name": "(사)한국건강기능식품협회 부설 한국기능식품연구원",
+      "representative": "정명수",
+      "address": "경기도 성남시 분당구 대왕판교로 700번지 코리아바이오파크 B동 A-B03호, B101∼102호, B301∼302호",
+      "tel": "031-628-2400",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사), 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "방사능",
+        "유전자변형식품 확인",
+        "식품조사처리확인"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제45호",
+      "name": "한국에스지에스㈜",
+      "representative": "이인섭",
+      "address": "경기도 의왕시 맑은내길 67, 301호, 302호, 303호, 304호, 305호(오전동)",
+      "tel": "031-689-8612~7",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사), 품목제조·가공검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "방사능",
+        "유전자변형식품 확인"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제54호",
+      "name": "(주)정피엔씨연구소",
+      "representative": "정영철",
+      "address": "경기도 용인시 기흥구 흥덕중앙로 120 유-타워 1504호, 1505호(영덕동)",
+      "tel": "031-708-8113",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품, 건강기능식품, 식품첨가물",
+      "scopes": [
+        "유전자변형식품 확인"
+      ],
+      "valid_until": "29.6.19",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제100호",
+      "name": "(주)세스코 시험분석연구원",
+      "representative": "전찬혁",
+      "address": "서울특별시 강동구 상일로 10길 36(상일동) 8층. 9층",
+      "tel": "02-2140-3515",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "동물용의약품"
+      ],
+      "valid_until": "28.7.10",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제117호",
+      "name": "하나원자력기술㈜ 환경방사능분석센터",
+      "representative": "강신섭, 이의동, 이진우",
+      "address": "충북 청주시 청원구 안덕벌로 104번길 28, 청주대학교 미래창조관 510호, 511호",
+      "tel": "070-4035-1942",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "방사능"
+      ],
+      "valid_until": "30.3.9",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제129호",
+      "name": "방사능분석센터㈜",
+      "representative": "박현정",
+      "address": "부산광역시 금정구 부산대학로 63번길 2 부산대학교 공동연구기기동 211-1호, B105호",
+      "tel": "051-512-1830",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "방사능"
+      ],
+      "valid_until": "28.1.22",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제133호",
+      "name": "(주)핀어클 CALS지점",
+      "representative": "이명학",
+      "address": "경기도 용인시 수지구 포은대로 499(죽전동, 용인아르피아내 B1구역)",
+      "tel": "070-8879-0623",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품, 건강기능식품, 식품첨가물",
+      "scopes": [
+        "유전자변형식품 확인"
+      ],
+      "valid_until": "28.11.26",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제141호",
+      "name": "(주)캠바이오",
+      "representative": "이헌무",
+      "address": "부산시 동래구 충렬대로 280",
+      "tel": "051-711-7170",
+      "work_scope": "자가품질위탁검사,  전문 시험검사(수입검사, 검사명령검사, 수거검사), 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "29.2.10",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제146호",
+      "name": "주식회사 알엠택",
+      "representative": "이홍연",
+      "address": "광주광역시 광산구 하남산단천변좌로 25, 404호",
+      "tel": "062-236-6742",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품",
+      "scopes": [
+        "방사능"
+      ],
+      "valid_until": "27.8.30",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제147호",
+      "name": "㈜한국유로핀즈분석서비스",
+      "representative": "정명호",
+      "address": "경기도 군포시 산본로 101번길 13",
+      "tel": "031-361-7777",
+      "work_scope": "전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "다이옥신"
+      ],
+      "valid_until": "28.2.25",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제148호",
+      "name": "(사)KOTITI 시험연구원",
+      "representative": "김준",
+      "address": "경기도 과천시 과천대로7나길 48 (갈현동)",
+      "tel": "02-3451-7364",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사), 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "방사능",
+        "유전자변형식품 확인",
+        "식품용수 등의 노로바이러스"
+      ],
+      "valid_until": "28.10.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제154호",
+      "name": "수산업협동조합중앙회 수산식품연구실",
+      "representative": "전다윗",
+      "address": "서울특별시 동작구 노들로 674 6층",
+      "tel": "02-2240-0155",
+      "work_scope": "자가품질위탁검사, 전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품",
+      "scopes": [
+        "방사능"
+      ],
+      "valid_until": "27.11.9",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제157호",
+      "name": "주식회사 씨티케이",
+      "representative": "YOUNG JOSEPH SEUNGWON",
+      "address": "경기도 용인시 기흥구 신정로 41번길 52-17",
+      "tel": "031-284-3155",
+      "work_scope": "전문 시험검사(수입검사, 검사명령검사, 수거검사)",
+      "field_detail": "식품",
+      "scopes": [
+        "다이옥신"
+      ],
+      "valid_until": "29.3.24",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제9호",
+      "name": "한국장류협동조합",
+      "representative": "김진은",
+      "address": "서울특별시 송파구 삼전로 7길 6",
+      "tel": "02-424-3141~4",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품\n(장류, 면류, 어육가공품, 조미식품)",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제19호",
+      "name": "(주)현대그린푸드 식품위생연구소",
+      "representative": "박홍진",
+      "address": "경기도 용인시 수지구 문인로 30",
+      "tel": "031-525-2131~9",
+      "work_scope": "자가품질위탁검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "식품용수등의 노로바이러스",
+        "유전자변형식품 확인"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제23호",
+      "name": "(재)한국건설생활환경시험연구원",
+      "representative": "천영길",
+      "address": "서울특별시 금천구 가산디지털 1로199(가산동)",
+      "tel": "02-2102-2571",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "기구 및 용기·포장",
+      "scopes": [
+        "이화학"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제25호",
+      "name": "삼성웰스토리㈜ 식품연구소",
+      "representative": "송규종",
+      "address": "경기도 용인시 기흥구 용구대로 2442-1(마북동, 외 6필지)",
+      "tel": "031-899-0543",
+      "work_scope": "자가품질위탁검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "방사능",
+        "식품용수등의 노로바이러스",
+        "유전자변형식품 확인"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제39호",
+      "name": "수원여자대학교 식품분석연구센터",
+      "representative": "이난경",
+      "address": "경기도 화성시 봉담읍 주석로 1098",
+      "tel": "031-290-8217~8",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제50호",
+      "name": "(주)산업공해연구소",
+      "representative": "이기채, 이혜선",
+      "address": "서울시 금천구 디지털로 130 남성프라자 1008-1010",
+      "tel": "02-2026-1271",
+      "work_scope": "자가품질위탁검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "미생물",
+        "잔류농약",
+        "이화학"
+      ],
+      "valid_until": "29.8.6",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제65호",
+      "name": "재단법인 창녕양파앤마늘 식품연구원",
+      "representative": "성낙인",
+      "address": "경상남도 창녕군 대지면 우포2로 1085",
+      "tel": "055-532-3921",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "26.6.29",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제68호",
+      "name": "(주)아워홈(품질경영부문)",
+      "representative": "김태원",
+      "address": "서울특별시 강서구 마곡중앙10로 91, 7층",
+      "tel": "02-6966-9435",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품, 식품첨가물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "방사능",
+        "식품용수등의 노로바이러스",
+        "유전자변형식품 확인"
+      ],
+      "valid_until": "27.8.29",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제69호",
+      "name": "한서대학교 산학협력단",
+      "representative": "김현성",
+      "address": "충남 서산시 한서1로 46 이학관 1층",
+      "tel": "041-660-1776",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.8.23",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제81호",
+      "name": "한국인터텍테스팅서비스 군포시험연구소",
+      "representative": "김주용",
+      "address": "경기도 군포시 공단로160번길 3, 6층, 7층(당정동, 인터텍빌딩))",
+      "tel": "02-6090-9521",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.9.27",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제82호",
+      "name": "(사)한국식용유지고추가공업협회 부설 시험분석연구소",
+      "representative": "이상규",
+      "address": "서울특별시 성동구 성수일로 84 남영디지털타워 702호",
+      "tel": "02-2294-2269",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품\n(식용유지류에 한함)",
+      "scopes": [
+        "이화학"
+      ],
+      "valid_until": "28.11.11",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제83호",
+      "name": "(재)진안홍삼연구소",
+      "representative": "현동윤",
+      "address": "전북 진안군 진안읍 홍삼한방로 41",
+      "tel": "063-432-0948",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약"
+      ],
+      "valid_until": "28.12.21",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제88호",
+      "name": "사조푸디스트㈜ 식품분석센터",
+      "representative": "박선호",
+      "address": "경기도 이천시 부발읍 중부대로 1763번길 45, 3층",
+      "tel": "031-8011-3804",
+      "work_scope": "자가품질위탁검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "식품용수 등의 노로바이러스"
+      ],
+      "valid_until": "29.12.8",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제90호",
+      "name": "재단법인 경북바이오 산업연구원",
+      "representative": "전익조",
+      "address": "경북 안동시 풍산읍 산업단지 2길 5",
+      "tel": "054-850-6901, 6914~6916",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "30.2.24",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제91호",
+      "name": "(재)금산인삼약초산업진흥원",
+      "representative": "박지흥",
+      "address": "충남 금산군 금산읍 인삼광장로 25",
+      "tel": "041-750-1631",
+      "work_scope": "자가품질위탁검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.3.25",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제92호",
+      "name": "강원대학교 강릉산학협력단 동해안해양생물자원연구센터",
+      "representative": "이충일",
+      "address": "강원도 강릉시 죽헌길 7(지변동) 강릉원주대학교 공동실험실습관 4층",
+      "tel": "033-640-2730",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.10.25",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제93호",
+      "name": "(주)오에이티씨(OATC Inc.)",
+      "representative": "방상구",
+      "address": "서울특별시 금천구 범안로 1130, 디지털엠파이어빌딩 801~804호, 904-912호",
+      "tel": "070-4044-8832",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품, 식품첨가물, 기구 및 용기·포장, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.2.2",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제96호",
+      "name": "씨제이프레시웨이㈜식품안전연구실",
+      "representative": "이건일",
+      "address": "경기도 이천시 마장면 덕평로 811",
+      "tel": "031-776-5640",
+      "work_scope": "자가품질위탁검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "식품용수 등의 노로바이러스"
+      ],
+      "valid_until": "28.9.21",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제97호",
+      "name": "(사)한국인삼제품협회",
+      "representative": "김정민",
+      "address": "서울특별시 종로구 창경궁로 16가길 8",
+      "tel": "02-3672-8502~4",
+      "work_scope": "자가품질위탁검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품\n(기타가공품, 캔디류, 다류, 인삼홍삼음료, 혼합음료, 당절임, 추출가공식품), \n건강기능식품\n(인삼, 홍삼)",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.11.4",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제98호",
+      "name": "(주)혜성환경",
+      "representative": "장공례",
+      "address": "경기도 안양시 동안구 귀인로 79번길 35(호계동) 4층",
+      "tel": "031-473-3413",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "식품용수 등의 노로바이러스"
+      ],
+      "valid_until": "28.12.2",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제99호",
+      "name": "(주)디아이분석센터",
+      "representative": "류옥균, 이영준",
+      "address": "경기도 의정부시 문화로 6(고산동),  A동 921, 922, 923호(한강듀클래스 의정부고산)",
+      "tel": "031-836-5123",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.1.3",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제101호",
+      "name": "(주)바이오푸드랩",
+      "representative": "이용표",
+      "address": "서울특별시 구로구 디지털로30길 28, 1410호∼1414호 (구로동, 마리오타워)",
+      "tel": "070-7410-1400",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.10.15",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제102호",
+      "name": "(주)동원에프앤비 식품안전센타",
+      "representative": "김성용",
+      "address": "서울특별시 서초구 마방로고 60, 2층",
+      "tel": "02-589-6842",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품\n(㈜동원에프앤비와 계열사 생산식품검사 및 협력업체의 납품식품검사(잔류농약 제외))",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.10.4",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제104호",
+      "name": "중앙생명연구원(주)",
+      "representative": "박명희",
+      "address": "경기도 남양주시 별내면 청학로 54번길 50",
+      "tel": "031-844-1720",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.4.27",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제105호",
+      "name": "제일분석센타(주)",
+      "representative": "이은미",
+      "address": "서울특별시 구로구 디지털로 272, 909호, 910호, 912~915호(구로동, 한신아이티타워)",
+      "tel": "02-868-8188",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.5.18",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제107호",
+      "name": "(주)동진생명연구원",
+      "representative": "이창흡",
+      "address": "경남 창원시 의창구 차룡로 48번지 61",
+      "tel": "055-293-5440",
+      "work_scope": "자가품질위탁검사, 식품안전관리인증검사",
+      "field_detail": "식품, 식품첨가물, 기구 및 용기·포장",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "식품용수 등의 노로바이러스"
+      ],
+      "valid_until": "29.8.15",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제109호",
+      "name": "(재)전남바이오 진흥원 그린바이오본부 식품센터",
+      "representative": "김기홍",
+      "address": "전남 나주시 동수농공단지길 30-5(동수동)",
+      "tel": "061-336-9620",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.8.29",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제110호",
+      "name": "한국표준시험분석연구원㈜",
+      "representative": "안무헌",
+      "address": "경기도 안산시 단원구 광덕4로 250, 씨티프라자 5층",
+      "tel": "031-493-3547",
+      "work_scope": "자가품질위탁검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.9.26",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제112호",
+      "name": "계명대학교 전통미생물자원개발 및 산업화연구센터",
+      "representative": "김배환",
+      "address": "대구광역시 달서구 달구벌대로 1095 첨단산업지원센터",
+      "tel": "053-580-6446",
+      "work_scope": "자가품질위탁검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.9.27",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제114호",
+      "name": "(주)한국바이오분석연구원",
+      "representative": "박춘식",
+      "address": "경기도 군포시 엘에스로로 163, 중산빌딩 6층",
+      "tel": "031-602-9000",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.10.10",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제115호",
+      "name": "한결분석센터 주식회사",
+      "representative": "김진호",
+      "address": "경남 사천시 구암두문로 80",
+      "tel": "055-853-4045~6",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "30.1.22",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제119호",
+      "name": "부경대학교 식품분석센터",
+      "representative": "진영읍",
+      "address": "부산광역시 남구 용당동 신선로 365",
+      "tel": "051-629-7356",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.8.25",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제120호",
+      "name": "(주)아이에스에이연구원",
+      "representative": "최영훈",
+      "address": "경기도 의왕시 한밭들길12(고천동, 아이엔에스코리아)",
+      "tel": "031-212-0063",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "26.5.15",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제125호",
+      "name": "주식회사 씨티케이",
+      "representative": "YOUNG JOSEPH SEUNGWON",
+      "address": "경기도 용인시 기흥구 신정로 41번길 52-17",
+      "tel": "031-284-3155",
+      "work_scope": "자가품질위탁검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.9.24",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제130호",
+      "name": "주식회사 자인식품연구원",
+      "representative": "민석진",
+      "address": "광주광역시 북구 첨단벤처소로38번길 11-5, 에이동 (월출동)",
+      "tel": "062-351-1005",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28..2.4",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제132호",
+      "name": "(주)한국유로핀즈분석서비스",
+      "representative": "정명호",
+      "address": "경기도 군포시 산본로 101번길 13",
+      "tel": "031-361-7777",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.4.25",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제134호",
+      "name": "한국식품안전관리인증원",
+      "representative": "한상배",
+      "address": "충북 청주시 흥덕구 오송읍 오송생명5로 156",
+      "tel": "043-928-0192",
+      "work_scope": "자가품질위탁검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "27.12.25",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제135호",
+      "name": "(주)한국분석센터",
+      "representative": "김윤아",
+      "address": "부산광역시 사상구 학감대로133번길 13(학장동)",
+      "tel": "051-714-4691",
+      "work_scope": "자가품질위탁검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.3.13",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제139호",
+      "name": "제주대학교 생명과학기술혁신센터",
+      "representative": "박성수",
+      "address": "제주특별자치도 제주시 제주대학로 102",
+      "tel": "064-754-2136",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.10.13",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제140호",
+      "name": "순창군장류산업사업소",
+      "representative": "정도연",
+      "address": "전북특별자치도 순창군 순창읍 민속마을길 61-28 3층, 4층 일부",
+      "tel": "063-650-5426",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품\n(장류, 조미식품, 식초, 소스, 향신료가공품, 절임 또는 조림류)",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.11.4",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제142호",
+      "name": "한국식품산업 클러스터진흥원",
+      "representative": "김덕호",
+      "address": "전북 익산시 왕궁면 국가식품로 100",
+      "tel": "063-720-0618",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "미생물"
+      ],
+      "valid_until": "30.1.21",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제143호",
+      "name": "디에이치유(DHU)바이오 융·복합시험센터",
+      "representative": "황세진",
+      "address": "경북 경산시 한의대로 1 바이오센터 2층",
+      "tel": "053-819-1495",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "30.3.24",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제144호",
+      "name": "(재)목포수산식품지원센터",
+      "representative": "조석훈",
+      "address": "전남 목포시 고하대로 719번길 52(연산동)",
+      "tel": "061-276-1671",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "26.5.20",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제145호",
+      "name": "(주)휴먼바이오",
+      "representative": "김수경",
+      "address": "충남 공주시 한적2길 52-103, 2~5층",
+      "tel": "041-881-9200",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품, 식품첨가물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약"
+      ],
+      "valid_until": "26.6.8",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제150호",
+      "name": "씨제이제일제당㈜분석팀",
+      "representative": "강신호, 손경식",
+      "address": "경기도 수원시 영통구 광교로 42번길 55 3층, 4층 일부",
+      "tel": "031-8099-2459",
+      "work_scope": "자가품질위탁검사, 표시검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학"
+      ],
+      "valid_until": "28.11.23",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제151호",
+      "name": "포항시 수산물품질관리센터",
+      "representative": "구광회",
+      "address": "경북 포항시 남구 구룡포읍 구룡포길117번길 28-8",
+      "tel": "054-270-2862",
+      "work_scope": "자가품질위탁검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "미생물"
+      ],
+      "valid_until": "28.12.29",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제152호",
+      "name": "주식회사 글로컬바이오",
+      "representative": "김은식",
+      "address": "충북 충주시 충원대로 268, 상허연구동 514호",
+      "tel": "043-840-3871",
+      "work_scope": "자가품질위탁검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.1.31",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제155호",
+      "name": "재단법인 홍천메디칼 허브연구소",
+      "representative": "신영재",
+      "address": "강원특별자치도 홍천군 홍천읍 생명과학관길 84, 2층",
+      "tel": "033-439-3265",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.10.29",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제156호",
+      "name": "(재)한국화학융합시험연구원",
+      "representative": "김현철",
+      "address": "경기도 과천시 교육원로 98(중앙동)",
+      "tel": "02-2092-3729",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "기구 및 용기·포장",
+      "scopes": [
+        "이화학"
+      ],
+      "valid_until": "28.12.11",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제158호",
+      "name": "(재)한국기계전기전자시험연구원",
+      "representative": "안성일",
+      "address": "경기도 군포시 엘에스로 115번길 74",
+      "tel": "031-455-7365",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "기구 및 용기·포장",
+      "scopes": [
+        "이화학"
+      ],
+      "valid_until": "29.5.29",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제159호",
+      "name": "한국생명과학연구원㈜",
+      "representative": "김경운",
+      "address": "대전광역시 동구 대학로 62, 산학협력관 319호",
+      "tel": "042-282-4567",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.9.24",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제160호",
+      "name": "(재)한국화학융합시험연구원 충북",
+      "representative": "김현철",
+      "address": "충북 청주시 흥덕구 오송읍 오송생명5로",
+      "tel": "043-238-8779",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.9.24",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제161호",
+      "name": "㈜에이티분석센타",
+      "representative": "안태헌",
+      "address": "인천광역시 연수구 벤처로 100번길 21(송도동, ㈜다인시스콘)",
+      "tel": "032-715-4755",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.12.8.",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제162호",
+      "name": "㈜한국바이오솔루션",
+      "representative": "정주영",
+      "address": "대전광역시 유성구 유성대로 877번길 72, 4~5층",
+      "tel": "042-721-5933",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "식품, 건강기능식품",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "30.3.23.",
+      "category": "식품"
+    },
+    {
+      "designation_no": "제2호",
+      "name": "한국식품안전관리인증원",
+      "representative": "한상배",
+      "address": "충북 청주시 흥덕구 오송읍 오송생명5로 156",
+      "tel": "043-928-0192",
+      "work_scope": "자가품질위탁검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "27.12.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제6호",
+      "name": "한국식품산업협회 부설 한국식품과학연구원",
+      "representative": "이효율",
+      "address": "경기도 의왕시 봇들로 50(포일동)",
+      "tel": "02-3470-8200",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "동물용의약품",
+        "방사능"
+      ],
+      "valid_until": "27.11.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제8호",
+      "name": "㈜한국유로핀즈분석서비스",
+      "representative": "정명호",
+      "address": "경기도 군포시 산본로 101번길 13",
+      "tel": "031-361-7777",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.12.17",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제9호",
+      "name": "한국표준시험분석연구원㈜",
+      "representative": "안무헌",
+      "address": "경기도 안산시 단원구 광덕4로 250, 씨티프라자 5층",
+      "tel": "031-493-3547",
+      "work_scope": "자가품질위탁검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.11.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제10호",
+      "name": "삼성웰스토리㈜ 식품연구소",
+      "representative": "송규종",
+      "address": "경기도 용인시 기흥구 용구대로 2442-1(마북동, 외 6필지)",
+      "tel": "031-899-0543",
+      "work_scope": "spps",
+      "field_detail": "축산물\n(식육가공품, 알가공품, 포장육에 한함)",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "한우확인시험"
+      ],
+      "valid_until": "27.12.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제12호",
+      "name": "농협경제지주㈜ 축산연구원",
+      "representative": "오주영",
+      "address": "경기도 안성시 공도읍 대신두길 42-20",
+      "tel": "031-659-1336",
+      "work_scope": "자가품질위탁검사, 표시검사",
+      "field_detail": "축산물\n(식육가공품(식용우지, 식용돈지 제외), 알가공품, 식용란, 포장육에 한함)",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약 및 잔류동물용의약품(식용란에 한함)"
+      ],
+      "valid_until": "27.12.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제13호",
+      "name": "계명대학교 전통미생물자원개발 및 산업화연구센터",
+      "representative": "김배환",
+      "address": "대구광역시 달서구 달구벌대로 1095 첨단산업지원센터",
+      "tel": "053-580-6441",
+      "work_scope": "자가품질위탁검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.12.31",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제14호",
+      "name": "(주)동진생명연구원",
+      "representative": "이창흡",
+      "address": "경남 창원시 의창구 차룡로 48번지 61",
+      "tel": "055-293-5440",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물\n(조제유류 제외)",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.11.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제15호",
+      "name": "씨제이프레시웨이㈜식품안전연구실",
+      "representative": "이건일",
+      "address": "경기도 이천시 마장면 덕평로 811",
+      "tel": "031-776-5654",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물\n(식육가공품,  알가공품, 식용란에 한함)",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "27.11.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제16호",
+      "name": "(주)현대그린푸드 식품위생연구소",
+      "representative": "박홍진",
+      "address": "경기도 용인시 수지구 문인로 30, 4층",
+      "tel": "031-525-2130",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물\n(식육가공품,  알가공품, 포장육에 한함)",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "한우확인시험"
+      ],
+      "valid_until": "27.11.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제18호",
+      "name": "수원여자대학교 식품분석연구센터",
+      "representative": "이난경",
+      "address": "경기도 화성시 봉담읍 주석로 1098",
+      "tel": "031-290-8263",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약(식용란에 한함)",
+        "잔류동물용의약품(식용란에 한함)"
+      ],
+      "valid_until": "27.11.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제20호",
+      "name": "(주)한국분석기술연구원",
+      "representative": "이태훈",
+      "address": "부산광역시 동구 대영로 267 해광빌딩(초량동)",
+      "tel": "051-466-1231",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "29.7.19.",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제22호",
+      "name": "(주)산업공해연구소",
+      "representative": "이기채, 이혜선",
+      "address": "서울특별시 금천구 디지털로 130 남성프라자 1008-1010",
+      "tel": "02-2026-1250",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.11.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제26호",
+      "name": "(사)한국건강기능식품협회 부설 한국기능식품연구원",
+      "representative": "정명수",
+      "address": "경기도 성남시 분당구 대왕판교로 700번지 코리아바이오파크 B동 A-B03호, B101∼102호, B301∼302호",
+      "tel": "031-628-2400",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사,  표시검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "방사능"
+      ],
+      "valid_until": "28.7.6",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제27호",
+      "name": "(주)아워홈(품질경영부문)",
+      "representative": "김태원",
+      "address": "서울특별시 강서구 마곡중앙10로 91, 7층",
+      "tel": "02-6966-9435",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물\n(조제유류 제외)",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "29.2.5",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제33호",
+      "name": "한국식품산업협회 부산지원",
+      "representative": "이효율",
+      "address": "부산광역시 남구 수영로 309(대연동)",
+      "tel": "051-628-7915",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "29.7.13",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제40호",
+      "name": "(주)동원에프엔비 식품안전센타",
+      "representative": "김성용",
+      "address": "서울특별시 서초구 마방로60, 2층",
+      "tel": "02-589-3990",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.10.4",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제41호",
+      "name": "㈜바이오푸드랩",
+      "representative": "이용표",
+      "address": "서울특별시 구로구 디지털로30길 28, 1410호∼1414호 (구로동, 마리오타워)",
+      "tel": "070-7410-1420",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.10.15",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제42호",
+      "name": "사조푸디스트㈜ 식품분석센터",
+      "representative": "박선호",
+      "address": "경기도 이천시 부발읍 중부대로 1763번길 45, 3층",
+      "tel": "031-8011-3804",
+      "work_scope": "자가품질위탁검사, 표시검사",
+      "field_detail": "축산물\n(식육가공품, 알가공품, 포장육에 한함)",
+      "scopes": [
+        "이화학(영양성분제외)",
+        "미생물",
+        "한우확인시험"
+      ],
+      "valid_until": "28.11.9",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제43호",
+      "name": "(주)정피엔씨연구소",
+      "representative": "정영철",
+      "address": "경기도 용인시 기흥구 흥덕중앙로 120 유-타워 1504호, 1505호(영덕동)",
+      "tel": "031-708-8113",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사, 표시검사",
+      "field_detail": "축산물\n(식육가공품, 포장육)",
+      "scopes": [
+        "한우확인시험"
+      ],
+      "valid_until": "29.6.19",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제45호",
+      "name": "중앙생명연구원(주)",
+      "representative": "박명희",
+      "address": "경기도 남양주시 별내면 청학로 54번길 50",
+      "tel": "031-844-1720",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.4.27",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제47호",
+      "name": "제일분석센타(주)",
+      "representative": "이은미",
+      "address": "서울특별시 구로구 디지털로 272, 909, 910, 912, 913, 914, 915호(구로동, 한신IT타워)",
+      "tel": "02-862-8666",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품(성장보조제 제외)"
+      ],
+      "valid_until": "29.5.18",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제48호",
+      "name": "㈜디아이분석센터",
+      "representative": "류옥균, 이영준",
+      "address": "경기도 의정부시 문화로 6(고산동),  A동 921, 922, 923호(한강듀클래스 의정부고산)",
+      "tel": "031-836-5123",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.1.3",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제49호",
+      "name": "㈜오에이티씨(OATC Inc.)",
+      "representative": "방상구",
+      "address": "서울특별시 금천구 범안로 1130, 디지털엠파이어빌딩 801~804호, 904-912호",
+      "tel": "070-4044-8830",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품(성장보조제 제외)"
+      ],
+      "valid_until": "29.6.14",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제52호",
+      "name": "한국인터텍테스팅서비스 군포시험연구소",
+      "representative": "김주용",
+      "address": "경기도 군포시 공단로160번길 3, 6층, 7층(당정동, 인터텍빌딩)",
+      "tel": "02-6090-9521",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.12.11",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제53호",
+      "name": "하나원자력기술㈜ 환경방사능분석센터",
+      "representative": "전준, 강신섭, 이의동",
+      "address": "충북 청주시 청원구 안덕벌로 104번길 28, 청주대학교 미래창조관 510호, 511호",
+      "tel": "070-4035-1942",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "방사능"
+      ],
+      "valid_until": "26.3.9",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제54호",
+      "name": "㈜아이에스에이연구원",
+      "representative": "최영훈",
+      "address": "경기도 의왕시 한밭들길12(고천동, 아이엔에스코리아)",
+      "tel": "031-212-0063",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "26.5.16",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제56호",
+      "name": "㈜한국바이오분석연구원",
+      "representative": "박춘식",
+      "address": "경기도 군포시 엘에스로 163(산본동, 중산빌딩) 6층",
+      "tel": "031-602-9000",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.9.7",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제59호",
+      "name": "(주)세스코 시험분석연구원",
+      "representative": "전찬혁",
+      "address": "서울특별시 강동구  상일로10길 36, 세종텔레콤 8, 9층 (상일동)",
+      "tel": "02-2140-3515",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "한우확인시험"
+      ],
+      "valid_until": "27.9.18",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제60호",
+      "name": "한결분석센터 주식회사",
+      "representative": "김진호",
+      "address": "경남 사천시 구암두문로 80",
+      "tel": "055-853-4045~6",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.1.9",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제61호",
+      "name": "방사능분석센터㈜",
+      "representative": "박현정",
+      "address": "부산광역시 금정구 부산대학로 63번길 2 부산대학교 공동연구기기동 211-1호, B105호",
+      "tel": "051-512-1830",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "방사능"
+      ],
+      "valid_until": "28.1.22",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제63호",
+      "name": "주식회사 글로컬바이오",
+      "representative": "김은식",
+      "address": "충북 충주시 충원대로 268 상허연구동 514호",
+      "tel": "043-840-3871",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.1.31",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제64호",
+      "name": "주식회사 자인식품연구원",
+      "representative": "민석진",
+      "address": "광주광역시 북구 첨단벤처소로38번길 11-5, 에이동 (월출동)",
+      "tel": "062-351-1005",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "28.2.4",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제66호",
+      "name": "주식회사 씨티케이",
+      "representative": "YOUNG JOSEPH SEUNGWON",
+      "address": "경기도 용인시 기흥구 신정로 41번길 52-17",
+      "tel": "031-702-3155",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "28.3.18",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제69호",
+      "name": "한국에스지에스㈜",
+      "representative": "이인섭",
+      "address": "경기도 의왕시 맑은내길 67, 301호, 302호, 303호, 304호, 305호(오전동)",
+      "tel": "031-689-8612~7",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "방사능"
+      ],
+      "valid_until": "28.9.30",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제72호",
+      "name": "부경대학교 식품분석센터",
+      "representative": "진영읍",
+      "address": "부산광역시 남구 신선로 365  부경대학교 용당캠퍼스 33호관",
+      "tel": "051-629-7357",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.8.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제73호",
+      "name": "(주)한국분석센터",
+      "representative": "김윤아",
+      "address": "부산광역시 사상구 학감대로133번길 13(학장동)",
+      "tel": "051-714-4691",
+      "work_scope": "자가품질위탁검사, 표시검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "축산물\n(조제유류 제외)",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.12.10.",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제74호",
+      "name": "㈜휴먼바이오",
+      "representative": "김수경",
+      "address": "충남 공주시 한적2길 52-103, 2~5층",
+      "tel": "041-881-9200",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "26.6.8.",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제75호",
+      "name": "(주)캠바이오",
+      "representative": "이헌무",
+      "address": "부산시 동래구 충렬대로 280",
+      "tel": "051-711-7170",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품"
+      ],
+      "valid_until": "29.2.10",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제76호",
+      "name": "제주대학교 생명과학기술혁신센터",
+      "representative": "박성수",
+      "address": "제주특별자치도 제주시 제주대학로 102",
+      "tel": "064-754-2134",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.8.9",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제77호",
+      "name": "한서대학교 산학협력단",
+      "representative": "김현성",
+      "address": "충남 서산시 해미면 한서1로 46, 이학관 1층",
+      "tel": "041-660-1776",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.8.23",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제78호",
+      "name": "디에이치유(DHU)바이오 융·복합시험센터",
+      "representative": "황세진",
+      "address": "경북 경산시 한의대로1 바이오센터 2층",
+      "tel": "053-819-1495",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "30.3.24",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제79호",
+      "name": "강원대학교 강릉산학협력단 동해안해양생물자원연구센터",
+      "representative": "이충일",
+      "address": "강원도 강릉시 죽헌길 7, 강릉원주대학교 공동실험실습관 401호, 407~412호",
+      "tel": "033-640-2238",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "27.10.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제80호",
+      "name": "㈜한국유로핀즈분석서비스",
+      "representative": "정명호",
+      "address": "경기도 군포시 산본로 101번길 13",
+      "tel": "031-361-7777",
+      "work_scope": "수입검사, 수거검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "다이옥신"
+      ],
+      "valid_until": "28.2.25",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제81호",
+      "name": "(사)KOTITI 시험연구원",
+      "representative": "김준",
+      "address": "경기도 과천시 과천대로7나길 48 (갈현동)",
+      "tel": "02-3451-7364",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사, 품목제조·가공검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물",
+        "잔류농약",
+        "잔류동물용의약품",
+        "방사능"
+      ],
+      "valid_until": "28.10.6",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제84호",
+      "name": "재단법인 경북바이오 산업연구원",
+      "representative": "전익조",
+      "address": "경북 안동시 풍산읍 산업단지 2길 5",
+      "tel": "054-850-6901, 6914~6916",
+      "work_scope": "자가품질위탁검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "30.2.24",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제85호",
+      "name": "주식회사 씨티케이",
+      "representative": "YOUNG JOSEPH SEUNGWON",
+      "address": "경기도 용인시 기흥구 신정로 41번길 52-17",
+      "tel": "031-284-3155",
+      "work_scope": "수입검사, 수거검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "다이옥신"
+      ],
+      "valid_until": "29.3.24",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제86호",
+      "name": "한국생명과학연구원㈜",
+      "representative": "김경운",
+      "address": "대전광역시 동구 대학로 62, 산학협력관 319호",
+      "tel": "042-282-4567",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.9.24",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제87호",
+      "name": "(주)핀어클 CALS지점",
+      "representative": "이명학",
+      "address": "경기도 용인시 수지구 포은대로 499\n(죽전동, 용인아르피아내 B1구역)",
+      "tel": "070-8879-0623",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사, 표시검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "한우확인시험"
+      ],
+      "valid_until": "29.10.15",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제88호",
+      "name": "㈜에이티분석센타",
+      "representative": "안태헌",
+      "address": "인천광역시 연수구 벤처로 100번길 21(송도동, ㈜다인시스콘)",
+      "tel": "032-715-4755",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "29.12.8.",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제89호",
+      "name": "㈜한국바이오솔루션",
+      "representative": "정주영",
+      "address": "대전광역시 유성구 유성대로 877번길 72, 4~5층",
+      "tel": "042-721-5933",
+      "work_scope": "자가품질위탁검사, 품목제조·가공검사, 표시검사, 식품안전관리인증검사",
+      "field_detail": "축산물",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "30.3.23.",
+      "category": "축산물"
+    },
+    {
+      "designation_no": "제1호\n('18.4.19)",
+      "name": "한국식품산업협회 부설 한국식품과학연구원",
+      "representative": "박진선",
+      "address": "경기도 의왕시 봇들로 50(포일동)",
+      "tel": "02-3470-8200",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2028.4.18.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제3호\n('18.4.19)",
+      "name": "(재)한국화학융합시험연구원",
+      "representative": "김현철",
+      "address": "경기도 과천시 교육원로 98(중앙동)",
+      "tel": "02-2164-0011",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2028.4.18.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제4호\n('18.4.19)",
+      "name": "(사)KOTITI시험연구원",
+      "representative": "김준",
+      "address": "경기도 과천시 과천대로7나길 48(갈현동) 4층",
+      "tel": "02-3451-7446",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2028.4.18.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제5호\n('18.4.23)",
+      "name": "(재)한국건설생활환경시험연구원",
+      "representative": "천영길",
+      "address": "서울시 금천구 가산디지털1로 199(가산동)",
+      "tel": "02-2102-2579",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2028.4.22.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제6호\n('18.4.23)",
+      "name": "(사)한국건강기능식품협회 부설 한국기능식품연구원",
+      "representative": "정명수",
+      "address": "경기도 성남시 분당구 대왕판교로 700번지 코리아바이오파크 B동 A-B03호, B101∼102호, B301∼302호",
+      "tel": "031-628-2400",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2028.5.2.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "재7호\n('18.5.24)",
+      "name": "(재)KATRI시험연구원",
+      "representative": "신동준",
+      "address": "경기도 안양시 만안구 전파로 24번길 82",
+      "tel": "031-596-5600",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학"
+      ],
+      "valid_until": "2028.5.23.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "재8호\n('18.7.18)",
+      "name": "(재)FITI시험연구원 오창분원",
+      "representative": "윤주경",
+      "address": "충청북도 청주시 청원구 오창읍 양청3길 21",
+      "tel": "043-711-8880",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2028.7.17.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제9호\n('18.8.22)",
+      "name": "㈜한국분석기술연구원",
+      "representative": "이태훈",
+      "address": "부산시 동구 대영로 267 해광빌딩(초량동)",
+      "tel": "051-466-1231",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2028.8.21.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제10호\n('19.1.7)",
+      "name": "㈜오에이티씨",
+      "representative": "방상구",
+      "address": "서울시 금천구 범안로 1130, 801~806호, 905~912호(가산동, 디지털엠파이어)",
+      "tel": "070-4044-7084",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2029.1.6.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제12호\n('19.8.21)",
+      "name": "㈜세스코 시험분석연구원",
+      "representative": "전찬혁",
+      "address": "서울시 강동구 상일로 10길 36, 8층(상일동)",
+      "tel": "02-2140-3515",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2029.8.20.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제14호\n('23.5.31)",
+      "name": "(재)한국기계전기전자시험연구원",
+      "representative": "안성일",
+      "address": "경기도 군포시 엘에스로115번길 74",
+      "tel": "031-428-3862",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학",
+        "미생물"
+      ],
+      "valid_until": "2026.5.30.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제15호\n('24.6.26)",
+      "name": "(재)KATRI시험연구원 오송",
+      "representative": "신동준",
+      "address": "충청북도 청주시 흥덕구 오송읍 의료단지길 55",
+      "tel": "043-820-4831",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "미생물"
+      ],
+      "valid_until": "2028.6.25.",
+      "category": "위생용품"
+    },
+    {
+      "designation_no": "제16호\n('26.4.22)",
+      "name": "(재)한국화학융합시험연구원(울산)",
+      "representative": "김현철",
+      "address": "울산광역시 중구 종가로 15(다운동)",
+      "tel": "052-220-3000",
+      "work_scope": "자가품질위탁검사, 수입검사, 수거검사",
+      "scopes": [
+        "이화학"
+      ],
+      "valid_until": "2030.4.21.",
+      "category": "위생용품"
+    }
+  ]
+}

@@ -161,6 +161,55 @@ Each processed file creates a subdirectory with:
 - `<filename>_metadata.json` - Metadata (page info, token count, etc.)
 - Extracted images are saved directly in the output directory
 
+### Gemma Review Pass
+
+You can add a second pass that asks a Gemma/OpenAI-compatible model to review and correct the OCR Markdown while preserving the document structure:
+
+```bash
+chandra input.pdf ./output --review-with-gemma
+```
+
+By default this uses the Spark test endpoint:
+
+```bash
+REVIEW_API_BASE=http://222.110.207.7:8000/v1
+REVIEW_MODEL_NAME=google/gemma-4-26B-A4B-it
+```
+
+The original OCR Markdown is saved as `<filename>.md`, and the reviewed version is saved as `<filename>_reviewed.md`. By default the page image is sent to Gemma for the best handwriting/layout review; use `--review-text-only` to disable image input. If the image request fails, the CLI falls back to text-only review.
+
+For handwriting, seals, annotated forms, or low-resolution scans, use high-accuracy mode:
+
+```bash
+chandra input.pdf ./output --method vllm --accuracy-mode
+```
+
+High-accuracy mode enables:
+
+- image preprocessing before OCR
+- document/content auto-cropping to improve handwriting resolution
+- red/blue seal candidate detection
+- Gemma review for large layout-region crops
+- direct Gemma transcription on multiple image variants, independent of OCR
+- final full-page Gemma review with the crop-level evidence included
+- human-review flags in metadata when output contains `[unclear]`, `[?]`, failed reviews, or missing `--required-term` values
+
+It writes the normal OCR output plus:
+
+- `<filename>_reviewed.md` - final Gemma-reviewed Markdown
+- `<filename>_region_reviews.md` - crop-level review evidence
+- `<filename>_direct_transcriptions.md` - direct Gemma transcription evidence from image variants
+- `<filename>_metadata.json` - preprocessing, seal candidates, region reviews, and human-review routing flags
+
+Use `--no-auto-crop` when absolute page coordinates matter more than handwriting readability.
+Use `--no-direct-transcription` to disable the slower Gemma-only ensemble pass, or tune it with `--max-direct-transcriptions`.
+
+OpenCV is optional but recommended for better deskewing:
+
+```bash
+pip install chandra-ocr[accuracy]
+```
+
 ### Streamlit Web App
 
 Launch the interactive demo for single-page processing:
@@ -198,6 +247,12 @@ MAX_OUTPUT_TOKENS=12384
 VLLM_API_BASE=http://localhost:8000/v1
 VLLM_MODEL_NAME=chandra
 VLLM_GPUS=0
+
+# Gemma review settings
+REVIEW_API_BASE=http://222.110.207.7:8000/v1
+REVIEW_MODEL_NAME=google/gemma-4-26B-A4B-it
+REVIEW_API_KEY=EMPTY
+REVIEW_INCLUDE_IMAGE=true
 ```
 
 # Commercial usage

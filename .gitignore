@@ -224,3 +224,28 @@ __marimo__/
 .venv
 
 .idea/
+
+# 품질검토 파이프라인 산출물/스크래치
+out/
+samples/_rendered/
+
+# 품질검토 API
+data/reviews/
+chandra_api/users.json
+
+# 대용량 입력/캐시/산출물 (재생성 가능 — 커밋 제외)
+/data/
+output/
+output_improved/
+chandra/data/extraction_cache/
+chandra/data/law_attachments/
+chandra/data/law_monitor.json
+samples/
+frontend/node_modules/
+frontend/dist/
+kordoc_source.zip
+_*.txt
+
+# 원본 고시·별표 문서(코드 아님, 참고 입력물)
+*.hwp
+*.hwpx

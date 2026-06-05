@@ -1,0 +1,69 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+/* 전역 글씨 확대: rem 기반 Tailwind 텍스트·여백이 함께 커진다 */
+html {
+  font-size: 17.5px;
+}
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, sans-serif;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* 고시전문(법령 본문 변환) 렌더링 — 표/제목 가독성 */
+.lawdoc {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #334155;
+}
+.lawdoc h1,
+.lawdoc h2,
+.lawdoc h3 {
+  font-weight: 800;
+  color: #0f172a;
+  margin: 1.4em 0 0.5em;
+  padding-bottom: 0.2em;
+  border-bottom: 1px solid #e2e8f0;
+}
+.lawdoc h1 {
+  font-size: 1.3rem;
+}
+.lawdoc h2 {
+  font-size: 1.15rem;
+}
+.lawdoc h3 {
+  font-size: 1.05rem;
+}
+.lawdoc p {
+  margin: 0.4em 0;
+}
+.lawdoc table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+  font-size: 0.85rem;
+}
+.lawdoc th,
+.lawdoc td {
+  border: 1px solid #cbd5e1;
+  padding: 4px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+.lawdoc th {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+.lawdoc img {
+  display: none;
+}

@@ -211,8 +211,8 @@ def parse_layout(html: str, image: Image.Image, bbox_scale=settings.BBOX_SCALE):
         bbox = div.get("data-bbox")
 
         try:
-            bbox = bbox.split(" ")
-            bbox = list(map(int, bbox))
+            bbox = re.findall(r"-?\d+(?:\.\d+)?", bbox)
+            bbox = [int(float(value)) for value in bbox]
             assert len(bbox) == 4, "Invalid bbox length"
         except Exception:
             print(f"Invalid bbox format: {bbox}, defaulting to full image")

@@ -161,6 +161,56 @@ def test_self_tested_when_agency_is_manufacturer(monkeypatch):
 # ---------------------------------------------------------------------------
 # 소재지 매칭 (시·도 약칭↔정식명)
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 검사기관 검증 — 지정 만료(B3) · 식품/축산물 분야(B4)
+# ---------------------------------------------------------------------------
+def test_verify_agency_designation_expired():
+    from datetime import date
+    from chandra.test_agencies import TestAgency, verify_agency
+
+    db = [TestAgency(name="한국기능식품연구원", designation_no="제38호", category="식품",
+                     valid_until="26.5.20")]
+    v = verify_agency("한국기능식품연구원", "식품 제38호", db=db, today=date(2026, 6, 5))
+    assert v.found is True
+    assert v.designation_expired is True  # 26.5.20 < 2026-06-05
+
+
+def test_verify_agency_category_mismatch_blocks_designation_match():
+    from datetime import date
+    from chandra.test_agencies import TestAgency, verify_agency
+
+    db = [TestAgency(name="식품연구원", designation_no="제26호", category="식품", valid_until="27.1.1")]
+    # 성적서는 '축산물 제26호' — 같은 번호라도 분야가 달라 지정번호로 인정되면 안 됨
+    v = verify_agency("전혀다른이름", "축산물 제26호", db=db, today=date(2026, 6, 5))
+    assert v.match_basis != "designation_no"
+
+
+# ---------------------------------------------------------------------------
+# 자체검사 정확일치(B2) · 불검출 '0' 오판 제거(B5)
+# ---------------------------------------------------------------------------
+def test_self_tested_requires_exact_name(monkeypatch):
+    import chandra.foodsafety as fs
+    from datetime import date
+    from chandra.self_quality import build_self_quality_evidence, QualityCertificate
+
+    monkeypatch.setattr(fs, "search_food_spec", lambda *a, **k: [])
+    # 검사기관이 제조사와 '유사하지만 다른' 외부기관 → 자체검사로 인정하면 안 됨
+    cert = QualityCertificate(food_type="기타식물성유지", issue_date="2026-05-20",
+                              test_agency="노바렉스분석센터", manufacturer="주식회사 노바렉스")
+    ev = build_self_quality_evidence(cert, None, None, today=date(2026, 6, 5))
+    assert ev["검사기관_제조사동일_자체검사"] is False
+
+
+def test_evaluate_absence_bare_number_not_negative():
+    from chandra.self_quality import AbsenceCriteria, evaluate_absence
+
+    crit = AbsenceCriteria()
+    # 결과가 키워드 없이 숫자만('0.5')이면 '0' 때문에 음성으로 오판하지 말고 판정불가
+    verdict, _ = evaluate_absence(crit, "0.5")
+    assert verdict == "판정불가"
+    assert evaluate_absence(crit, "불검출")[0] == "적합"
+
+
 @pytest.mark.parametrize("q,addr,ok", [
     ("경상북도", "경상북도 칠곡군 지천면", True),
     ("경북", "경상북도 칠곡군", True),

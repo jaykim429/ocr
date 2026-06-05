@@ -58,20 +58,28 @@ def _supported_by_ocr(value: str | None, ocr_text: str, threshold: float = 0.6) 
 # test_agency 는 제외 — 검사기관 DB(전화/지정번호/이름/퍼지)로 더 견고하게 검증되므로
 # OCR 근거가 약해도 폐기하지 않고 DB 검증에 맡긴다.
 _GROUNDED_FIELDS = ("business_name", "manufacturer", "product_name")
+# product_name 은 제품 그룹핑의 핵심 키라 null 로 지우면 그룹핑이 깨진다.
+# OCR 근거가 약해도 값은 유지하고 '저신뢰'로만 표시한다.
+_GROUNDED_KEEP = ("product_name",)
 
 
 def _drop_hallucinations(result: dict[str, Any], ocr_text: str) -> dict[str, Any]:
-    """OCR 근거 없는 고유명사 값을 null 로 폐기하고 폐기 내역을 기록한다."""
+    """OCR 근거 없는 고유명사 값을 폐기(또는 저신뢰 표시)하고 내역을 기록한다."""
     if not ocr_text:
         return result
-    dropped = {}
+    dropped, low_conf = {}, []
     for field_name in _GROUNDED_FIELDS:
         val = result.get(field_name)
         if val and not _supported_by_ocr(str(val), ocr_text):
-            dropped[field_name] = val
-            result[field_name] = None
+            if field_name in _GROUNDED_KEEP:
+                low_conf.append(field_name)  # 그룹핑 키는 보존, 신뢰도만 낮춤
+            else:
+                dropped[field_name] = val
+                result[field_name] = None
     if dropped:
         result["_dropped_hallucinations"] = dropped
+    if low_conf:
+        result["_low_confidence_fields"] = low_conf
     return result
 
 
@@ -187,12 +195,14 @@ def refind_missing_fields(
     images: list[Image.Image],
     fields: list[str] | None = None,
     extra: list[str] | None = None,
+    context: str | None = None,
     **gemma_opts: Any,
 ) -> dict[str, Any]:
     """핵심 필드를 더 촘촘한 타일로 Gemma 가 다시 찾는다.
 
     대상 = (null 인 핵심 필드) + extra(값이 있어도 부정확 의심되는 필드).
     대상이 없으면 추가 호출 없이 그대로 반환(속도). 채운/교정한 필드는 _refound 에 기록.
+    context: 병합 PDF 다제품일 때 어느 제품을 읽을지 지정(제품명) — 교차오염 방지.
     """
     targets = [f for f in (fields or _REFIND_FIELDS) if f in _REFIND_FIELDS and not result.get(f)]
     for f in extra or []:
@@ -209,8 +219,13 @@ def refind_missing_fields(
 
     want = "\n".join(f"- {k}: {_REFIND_FIELDS[k]}" for k in targets)
     keys_json = ", ".join(f'"{k}": null' for k in targets)
+    ctx_line = (
+        f"이 문서에는 여러 제품이 섞여 있을 수 있습니다. '{context}' 제품에 해당하는 값만 읽으세요.\n"
+        if context else ""
+    )
     user = (
-        "아래 항목만 이미지(부분 확대 포함)에서 다시 정밀하게 찾아 읽으세요.\n"
+        ctx_line
+        + "아래 항목만 이미지(부분 확대 포함)에서 다시 정밀하게 찾아 읽으세요.\n"
         f"{want}\n\n반드시 이 JSON 만: {{{keys_json}}}"
     )
     try:
@@ -331,9 +346,12 @@ def classify_and_extract(
     cache_file = None
     try:
         h = hashlib.md5(Path(path).read_bytes()).hexdigest()
-        pv = hashlib.md5(_EXTRACTION_SYSTEM.encode("utf-8")).hexdigest()[:8]
+        # 프롬프트 버전: 1차 추출 + 재추출(refind) 프롬프트/대상필드를 모두 반영해
+        # 프롬프트가 바뀌면 캐시가 자동 무효화되도록 한다.
+        pv_src = _EXTRACTION_SYSTEM + _REFIND_SYSTEM + repr(sorted(_REFIND_FIELDS))
+        pv = hashlib.md5(pv_src.encode("utf-8")).hexdigest()[:8]
         _EXT_CACHE.mkdir(parents=True, exist_ok=True)
-        cache_file = _EXT_CACHE / f"{h}_{int(tile)}_{max_pages}_{pv}.json"
+        cache_file = _EXT_CACHE / f"{h}_{int(tile)}{tile_grid[0]}{tile_grid[1]}_{int(use_ocr)}_{max_pages}_{pv}.json"
         if cache_file.exists():
             cached = json.loads(cache_file.read_text(encoding="utf-8"))
             for r in cached:
@@ -417,8 +435,9 @@ def classify_and_extract(
         if result["doc_type"] not in KNOWN_DOC_TYPES:
             result["doc_type"] = DOC_UNKNOWN
 
-        # 단일 제품일 때만 누락/오인식 필드 재추출(다제품 병합 문서는 비용 큼 → 생략)
-        if single and result["doc_type"] in (DOC_PRODUCT_REPORT, DOC_SELF_QUALITY, DOC_LABEL, DOC_NUTRITION_CERT):
+        # 누락/오인식 핵심 필드 재추출. 단일 제품은 전체 핵심필드, 병합 PDF 다제품은
+        # 그룹핑·판정에 직결되는 필드만(비용 절감) + 제품명 컨텍스트로 교차오염 방지.
+        if result["doc_type"] in (DOC_PRODUCT_REPORT, DOC_SELF_QUALITY, DOC_LABEL, DOC_NUTRITION_CERT):
             suspect: list[str] = []
             ft = result.get("food_type")
             if ft:
@@ -429,7 +448,14 @@ def classify_and_extract(
                         suspect.append("food_type")  # 식품공전 미등록 → '가공유' 같은 오인식 의심
                 except Exception:  # noqa: BLE001
                     pass
-            result = refind_missing_fields(result, images, extra=suspect, **gemma_opts)
+            if single:
+                result = refind_missing_fields(result, images, extra=suspect, **gemma_opts)
+            else:
+                result = refind_missing_fields(
+                    result, images,
+                    fields=["manufacture_report_no", "business_name", "food_type"],
+                    extra=suspect, context=result.get("product_name"), **gemma_opts,
+                )
 
         result["file"] = path
         result["num_pages"] = len(images)

@@ -308,7 +308,8 @@ def evaluate_absence(crit: AbsenceCriteria, results_text: str) -> tuple[str, str
     positive = any(
         kw in text for kw in ("검출", "양성", "초과", "부적합")
     ) and not any(kw in text for kw in ("불검출", "미검출"))
-    negative = any(kw in text for kw in ("불검출", "미검출", "음성", "n.d", "N.D", "0"))
+    # 주의: 단순 "0"을 음성으로 보면 "0.5 검출" 같은 양성 결과를 불검출로 오판하므로 제외한다.
+    negative = any(kw in text for kw in ("불검출", "미검출", "음성", "n.d", "N.D"))
     if negative and not positive:
         return "적합", f"기준 {crit.describe()} | 결과 {text}"
     if positive:
@@ -598,7 +599,9 @@ _SELF_QUALITY_JUDGE_SYSTEM = """당신은 식품 품질검토 전문가입니다
   숫자 식별자가 일치하거나 명칭이 유사(오인식 수준 차이)하면 '동일'로 보고, 명백히 다른
   경우에만 불일치로 판단합니다. 사소한 표기·오인식 차이만으로 부적합 처리하지 않습니다.
 - 검사를 수행한 기관(검사기관_검증)이 공인 위생검사전문기관 목록에 존재하는지 반영합니다.
-  found=true 면(퍼지 매칭 포함) 공인기관으로 인정합니다.
+  found=true 면(퍼지 매칭 포함) 공인기관으로 인정합니다. 단, 검사기관_검증.designation_expired=true
+  이면 그 기관의 지정 유효기간이 지난 것이므로 '공인'으로 인정하지 말고 '검사기관 지정 만료 — 확인
+  필요'로 검토필요 처리하세요.
 - ★자가품질검사는 시행규칙 [별표12] 제5호에 따라 '영업자가 직접' 수행할 수도, 위탁 시험검사기관에
   위탁할 수도 있습니다. '검사기관_제조사동일_자체검사'=true 이면 검사기관이 제조사(영업자) 본인이라
   '영업자 직접 자가품질검사'로 적법합니다. 이 경우 공인 위탁검사기관 목록에 없더라도(found=false)
@@ -769,10 +772,14 @@ def build_self_quality_evidence(
         certificate.test_agency_designation_no,
         tel=certificate.test_agency_tel,
         address=certificate.test_agency_address,
+        today=today,
     )
-    # 검사기관이 제조사(영업자) 본인이면 영업자 직접 자가품질검사(시행규칙 별표12 제5호)
+    # 검사기관이 제조사(영업자) 본인이면 영업자 직접 자가품질검사(시행규칙 별표12 제5호).
+    # 면제(공인목록 없어도 적법) 신호이므로 퍼지매칭이 아니라 '정확 일치'만 인정한다
+    # (외부기관 이름이 제조사명과 유사하다는 이유로 자체검사로 오인하지 않도록).
     mfr_name = certificate.manufacturer or (manufacture.business_name if manufacture else None)
-    self_tested = _values_match(certificate.test_agency, mfr_name)
+    _ta, _mn = _strip_entity(certificate.test_agency or ""), _strip_entity(mfr_name or "")
+    self_tested = bool(_ta and _mn and _ta == _mn)
 
     return {
         "식품유형": food_type,
@@ -860,9 +867,10 @@ def evaluate_item_no_spec(item: ReportTestItem) -> tuple[str, str]:
     """식품공전 규격 매칭이 안 될 때: 성적서 인쇄 기준만으로 재계산."""
     printed = parse_criteria_text(item.criteria_text)
     if printed is None:
-        # 기준을 못 읽으면 인쇄된 판정을 그대로 신뢰
+        # 기준을 못 읽으면 독립 검증이 불가하므로 인쇄 판정을 그대로 신뢰하지 않고 '판정불가'로
+        # 둔다(검토필요로 라우팅). 인쇄 판정은 참고로만 detail 에 남긴다.
         if item.judgement_text:
-            return item.judgement_text.strip(), "성적서 인쇄 판정 사용(기준 파싱 불가)"
+            return "판정불가", f"기준 파싱 불가 — 독립 검증 불가(성적서 인쇄 판정: {item.judgement_text.strip()})"
         return "판정불가", "기준/판정 정보 없음"
     if isinstance(printed, MicroCriteria):
         return evaluate_micro(printed, item.results)

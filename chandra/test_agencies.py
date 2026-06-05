@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date as _date
 from dataclasses import asdict, dataclass, field
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -47,11 +48,42 @@ class AgencyVerification:
     match_basis: str | None  # designation_no / name / alias
     designation_no_match: bool | None
     detail: str
+    designation_expired: bool | None = None  # 지정 유효기간 경과 여부(True=만료)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["matched"] = self.matched.to_dict() if self.matched else None
         return data
+
+
+def _parse_agency_date(text: str | None) -> _date | None:
+    """'26.3.9' / '2026-03-09' / '2026.3.9' 등 검사기관 유효기간 표기를 date 로.
+
+    2자리 연도는 2000년대로 본다.
+    """
+    if not text:
+        return None
+    m = re.search(r"(\d{2,4})[.\-/년]\s*(\d{1,2})[.\-/월]\s*(\d{1,2})", str(text))
+    if not m:
+        return None
+    y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    if y < 100:
+        y += 2000
+    try:
+        return _date(y, mo, d)
+    except ValueError:
+        return None
+
+
+def _desig_category(text: str | None) -> str | None:
+    """지정번호 표기에서 분야 추출 — '식품 제099호'→식품, '축산물 제26호'→축산물."""
+    if not text:
+        return None
+    if "축산" in text:
+        return "축산물"
+    if "식품" in text:
+        return "식품"
+    return None
 
 
 def _norm_designation(text: str | None) -> str:
@@ -97,16 +129,33 @@ def verify_agency(
     tel: str | None = None,
     address: str | None = None,
     db: list[TestAgency] | None = None,
+    today: _date | None = None,
 ) -> AgencyVerification:
     """검사기관이 공인 목록에 있는지 확인.
 
     매칭 우선순위: 전화번호(숫자) > 지정번호 > 기관명/별칭 > 퍼지(유사도).
     전화번호는 OCR에서 숫자라 잘 안 깨지므로 가장 강건한 키다.
+    지정번호 매칭은 분야(식품/축산물)가 어긋나면 인정하지 않는다(식품 제99호 ≠ 축산물 제26호).
+    매칭된 기관의 지정 유효기간이 today 를 지났으면 designation_expired=True 로 표시한다.
     """
     agencies = db if db is not None else load_agency_db()
+    ref = today or _date.today()
     nname = _norm(name)
     ndesig = _norm_designation(designation_no)
     ntel = _digits(tel)
+    want_cat = _desig_category(designation_no)
+
+    def _mk(found, ag, basis, desig_ok, detail):
+        expired = None
+        if ag and ag.valid_until:
+            d = _parse_agency_date(ag.valid_until)
+            if d:
+                expired = d < ref
+                if expired:
+                    detail += f" — ⚠️ 지정 유효기간 만료(~{d.isoformat()}), 적합 인정 불가"
+        return AgencyVerification(
+            name, designation_no, found, ag, basis, desig_ok, detail, designation_expired=expired
+        )
 
     # 0) 전화번호(숫자) 매칭 — 성적서 하단 전화번호로 식별 (가장 강건)
     #    오탐 방지를 위해 전체 자릿수 동일 또는 9자리 이상 접미 일치만 인정.
@@ -116,21 +165,23 @@ def verify_agency(
             if not atel or len(atel) < 9:
                 continue
             if ntel == atel or ntel[-10:] == atel[-10:] or ntel[-9:] == atel[-9:]:
-                return AgencyVerification(
-                    name, designation_no, True, ag, "tel",
+                return _mk(
+                    True, ag, "tel",
                     None if not ndesig else _norm_designation(ag.designation_no) == ndesig,
                     f"전화번호({tel})로 공인기관 매칭: {ag.name}",
                 )
 
-    # 1) 지정번호 매칭
+    # 1) 지정번호 매칭 (분야 일치 요구 — 식품/축산물 교차매칭 방지)
     if ndesig:
         for ag in agencies:
-            if _norm_designation(ag.designation_no) == ndesig:
-                desig_ok = True
-                return AgencyVerification(
-                    name, designation_no, True, ag, "designation_no", desig_ok,
-                    f"지정번호 '{designation_no}' 로 공인기관 매칭: {ag.name}",
-                )
+            if _norm_designation(ag.designation_no) != ndesig:
+                continue
+            if want_cat and ag.category and ag.category != want_cat:
+                continue  # 같은 번호라도 분야가 다르면 다른 기관
+            return _mk(
+                True, ag, "designation_no", True,
+                f"지정번호 '{designation_no}' 로 공인기관 매칭: {ag.name}",
+            )
 
     # 2) 기관명/별칭 정확·부분 매칭
     if nname:
@@ -151,9 +202,7 @@ def verify_agency(
                             f" (단, 지정번호 불일치: 성적서 '{designation_no}' vs "
                             f"DB '{ag.designation_no}')"
                         )
-                    return AgencyVerification(
-                        name, designation_no, True, ag, basis, desig_ok, detail
-                    )
+                    return _mk(True, ag, basis, desig_ok, detail)
 
     # 3) 퍼지 매칭 (OCR 글자 오인식 보정: 디아이→다이아이 등) — 기관명 + 주소 보조
     if nname:
@@ -175,28 +224,15 @@ def verify_agency(
                 best_ag, best_score = ag, score
                 best_basis = "fuzzy+addr" if addr_score > name_score else "fuzzy"
         if best_ag and best_score >= 0.7:
-            return AgencyVerification(
-                name,
-                designation_no,
-                True,
-                best_ag,
-                best_basis,
-                (
-                    None
-                    if not ndesig
-                    else _norm_designation(best_ag.designation_no) == ndesig
-                ),
+            return _mk(
+                True, best_ag, best_basis,
+                None if not ndesig else _norm_designation(best_ag.designation_no) == ndesig,
                 f"유사도 {best_score:.2f}로 공인기관 추정 매칭: {best_ag.name} "
                 f"(성적서 표기 '{name}', OCR 오인식 가능 — 확인 권장)",
             )
 
     return AgencyVerification(
-        name,
-        designation_no,
-        False,
-        None,
-        None,
-        None,
+        name, designation_no, False, None, None, None,
         "공인 위생검사전문기관 목록에서 찾지 못함 (목록 갱신 필요 여부 확인)",
     )
 

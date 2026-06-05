@@ -236,7 +236,21 @@ def _run_steps_for_product(
     """한 제품의 문서들로 1·2·3단계를 수행한다."""
     by_type: dict[str, dict[str, Any]] = {}
     for ext in docs:
-        by_type.setdefault(ext.get("doc_type", "기타"), ext)
+        dt = ext.get("doc_type", "기타")
+        if dt not in by_type:
+            by_type[dt] = ext
+            continue
+        # 같은 종류 문서가 둘 이상이면(병합 업로드 등) 첫 문서만 쓰고 나머지를 버리지 말고,
+        # 리스트 필드(시험항목·원재료)를 합쳐 누락을 방지한다(스칼라 필드는 첫 문서 유지).
+        primary = by_type[dt] = dict(by_type[dt])  # 공유 추출 dict 변형 방지용 복사
+        for lf in ("test_items", "ingredients"):
+            merged = list(primary.get(lf) or [])
+            for x in (ext.get(lf) or []):
+                if x not in merged:
+                    merged.append(x)
+            if merged:
+                primary[lf] = merged
+        primary["_merged_duplicates"] = primary.get("_merged_duplicates", 1) + 1
 
     mfr = _to_manufacture(by_type.get(DOC_PRODUCT_REPORT))
     cert = _to_certificate(by_type.get(DOC_SELF_QUALITY))
@@ -399,6 +413,8 @@ def collect_flags(steps: dict[str, Any]) -> list[dict[str, Any]]:
         # 영업자 직접 자가품질검사(검사기관=제조사)는 공인 위탁목록 미존재가 흠이 아님
         if ag and not ag.get("found") and not ev3.get("검사기관_제조사동일_자체검사"):
             items.append(f"검사기관 미확인: {ag.get('detail')}")
+        if ag.get("designation_expired"):
+            items.append(f"검사기관 지정 만료: {ag.get('detail')}")
         val = (ev3.get("유효기간") or {})
         if val.get("valid") is False:
             items.append(f"유효기간 만료: {val.get('detail')}")

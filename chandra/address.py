@@ -140,3 +140,36 @@ def verify_addresses(a: str | None, b: str | None) -> AddressMatch:
     """juso API 가능하면 우선 사용, 아니면 오프라인 매칭."""
     via = addresses_match_via_juso(a, b)
     return via if via is not None else addresses_match(a, b)
+
+
+def label_address_discrepancy(
+    label_addr: str | None, official_addr: str | None
+) -> dict[str, Any] | None:
+    """표시사항(라벨) 주소가 공식 주소(품목제조보고서/인허가)와 '정확히' 일치하는지 본다.
+
+    라벨 주소는 소비자에게 인쇄되는 정보이므로, 시도 약칭·괄호·우편번호·공백 차이를 정리한
+    뒤에도 행정구역/도로명/번지 토큰이 다르면(예: '내수읍'↔'수내읍') 단순 일치로 넘기지 않고
+    검토 대상으로 반환한다. 차이가 없으면(또는 한쪽이 다른쪽을 포함하면) None.
+    """
+    if not label_addr or not official_addr:
+        return None
+    na, nb = normalize_address(label_addr), normalize_address(official_addr)
+    if not na or not nb or na == nb or na in nb or nb in na:
+        return None
+    ta, tb = _tokens(label_addr), _tokens(official_addr)
+    only_label = [t for t in ta if t not in tb]
+    only_official = [t for t in tb if t not in ta]
+    if not only_label and not only_official:
+        return None
+    detail = (
+        "표시사항 주소가 공식(품목제조보고서) 주소와 다릅니다 — "
+        f"표시사항 '{label_addr}' ↔ 공식 '{official_addr}'"
+        + (f" (불일치 토큰: 표시사항={only_label} / 공식={only_official})" if (only_label or only_official) else "")
+    )
+    return {
+        "label": label_addr,
+        "official": official_addr,
+        "label_only": only_label,
+        "official_only": only_official,
+        "detail": detail,
+    }

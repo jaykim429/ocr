@@ -287,12 +287,32 @@ def _run_steps_for_product(
         return {"status": "건너뜀 (자가품질검사성적서 없음)"}
 
     def _step4() -> dict[str, Any]:
+        from chandra.address import label_address_discrepancy
         from chandra.label_check import review_label_disclosures
 
         if not label_ext:
             return {"status": "건너뜀 (표시사항 없음)"}
         ft = _resolve_food_type(by_type).get("value")
-        return review_label_disclosures(label_ext, food_type=ft)
+        res = review_label_disclosures(label_ext, food_type=ft)
+
+        # 표시사항 주소가 공식(품목제조보고서) 주소와 다르면 자동 '적합' 통과 금지 — 반드시 검토 표시.
+        official_addr = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("address") or (mfr.address if mfr else None)
+        addr_issues = [d for lab in labels
+                       if (d := label_address_discrepancy(lab.get("address"), official_addr))]
+        if addr_issues:
+            v = res.setdefault("verdict", {}) or res["verdict"]
+            res["verdict"] = v
+            res.setdefault("evidence", {})["주소_불일치"] = addr_issues
+            v.setdefault("items", []).insert(0, {
+                "name": "생산자(영업소) 소재지 표시",
+                "verdict": "검토필요",
+                "reason": addr_issues[0]["detail"],
+            })
+            for d in addr_issues:
+                v.setdefault("reasons", []).append("표시사항 소재지 오기 의심: " + d["detail"])
+            if v.get("overall_verdict") in (None, "적합"):
+                v["overall_verdict"] = "검토필요"
+        return res
 
     from concurrent.futures import ThreadPoolExecutor
 

@@ -190,6 +190,22 @@ def test_is_livestock_product(ft, purpose, desig, ok):
     assert _is_livestock_product(ft, purpose, desig) is ok
 
 
+@pytest.mark.parametrize("label,official,flagged", [
+    # 읍 이름 오기(내수↔수내) → 검토 대상
+    ("충북 청주시 청원구 수내읍 청암로 192-21", "충청북도 청주시 청원구 내수읍 청암로 192-21", True),
+    # 시도 약칭 차이만 → 동일(이상 없음)
+    ("충북 청주시 청원구 내수읍 청암로 192-21", "충청북도 청주시 청원구 내수읍 청암로 192-21", False),
+    # 괄호 건물명만 추가 → 동일
+    ("경상북도 칠곡군 지천면 신동로7길 92(동명동)", "경상북도 칠곡군 지천면 신동로7길 92", False),
+    # 번지 다름 → 검토 대상
+    ("서울 강남구 테헤란로 10", "서울 강남구 테헤란로 12", True),
+])
+def test_label_address_discrepancy(label, official, flagged):
+    from chandra.address import label_address_discrepancy
+
+    assert (label_address_discrepancy(label, official) is not None) is flagged
+
+
 def test_food_type_consensus_override(monkeypatch):
     """보고서='육식간조리세트'(미등록) vs 성적서·표시사항='양념육' → 합의값 채택."""
     import chandra.foodsafety as fs

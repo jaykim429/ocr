@@ -67,3 +67,14 @@ body {
 .lawdoc img {
   display: none;
 }
+
+/* PDF 저장(브라우저 인쇄) — 결과 영역만 인쇄, 좌측 네비·버튼 등은 숨김 */
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0 8px; }
+  .no-print { display: none !important; }
+  /* 인쇄 시 카드 그림자 제거·페이지 분할 보기 좋게 */
+  .print-area .shadow-sm { box-shadow: none !important; }
+  .print-area section, .print-area .break-avoid { break-inside: avoid; }
+}

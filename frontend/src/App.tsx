@@ -187,6 +187,13 @@ function ReviewTab({ job, setJob, onLogout }: { job: any; setJob: (j: any) => vo
     catch (e: any) { if (e.message === "unauthorized") onLogout(); else setErr(e.message); }
   };
 
+  // 과거 검토 결과를 다시 열기(적재된 잡 조회)
+  const openHistory = async (id: string) => {
+    setErr("");
+    try { setJob(await api.getReview(id)); }
+    catch (e: any) { if (e.message === "unauthorized") onLogout(); else setErr(e.message); }
+  };
+
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault(); setDrag(false);
     const dropped = Array.from(e.dataTransfer.files || []);
@@ -238,7 +245,70 @@ function ReviewTab({ job, setJob, onLogout }: { job: any; setJob: (j: any) => vo
         </div>
       )}
 
-      {job?.status === "done" && job.result && <ReviewResult report={job.result} />}
+      <ReviewHistory currentId={job?.id} refreshKey={`${job?.id || ""}:${job?.status || ""}`} onOpen={openHistory} />
+
+      {job?.status === "done" && job.result && (
+        <div className="print-area">
+          <div className="no-print mb-3 flex justify-end">
+            <button
+              onClick={() => window.print()}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              🖨 PDF로 저장
+            </button>
+          </div>
+          <ReviewResult report={job.result} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 과거 검토 이력 — 적재된 잡 목록을 보여주고, 클릭하면 그 결과를 다시 연다.
+function ReviewHistory({ currentId, refreshKey, onOpen }: { currentId?: string; refreshKey?: string; onOpen: (id: string) => void }) {
+  const [items, setItems] = useState<any[] | null>(null);
+  const [open, setOpen] = useState(false);
+  const refresh = () => api.listReviews().then(setItems).catch(() => setItems([]));
+  // 최초 + 현재 잡의 상태가 바뀔 때(업로드·검토 완료 등) 목록 갱신
+  useEffect(() => { refresh(); }, [refreshKey]);
+
+  const VST: Record<string, string> = {
+    적합: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+    부적합: "bg-rose-50 text-rose-700 ring-rose-600/20",
+    검토필요: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  };
+  const fmt = (s?: string) => (s ? s.replace("T", " ").slice(0, 16) : "");
+  const STATUS_KO: Record<string, string> = { pending: "대기 중", running: "검토 중", error: "오류" };
+  const list = items || [];
+
+  return (
+    <div className="no-print my-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-2 px-5 py-3 text-left text-base font-semibold text-slate-700 hover:bg-slate-50">
+        <span>🗂 검토 이력</span>
+        <span className="text-sm font-normal text-slate-400">{list.length}건</span>
+        <span className="ml-auto text-slate-400">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <div className="max-h-80 divide-y divide-slate-100 overflow-y-auto border-t border-slate-100">
+          {list.length === 0 ? (
+            <div className="px-5 py-6 text-center text-sm text-slate-400">저장된 검토 이력이 없습니다</div>
+          ) : list.map((j) => (
+            <button
+              key={j.id}
+              onClick={() => j.status === "done" && onOpen(j.id)}
+              className={`flex w-full items-center gap-3 px-5 py-3 text-left text-sm ${j.status === "done" ? "hover:bg-slate-50" : "cursor-default opacity-60"} ${j.id === currentId ? "bg-brand-50" : ""}`}
+            >
+              <span className="flex-1 truncate font-medium text-slate-800">{j.input_name || "(이름 없음)"}</span>
+              <span className="shrink-0 text-xs text-slate-400">{fmt(j.created)}</span>
+              {j.status !== "done" ? (
+                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{STATUS_KO[j.status] || j.status}</span>
+              ) : (
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${VST[j.overall] || "bg-slate-100 text-slate-500 ring-slate-300"}`}>{j.overall || "—"}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

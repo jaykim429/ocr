@@ -224,21 +224,30 @@ function LawDetail({ law, onBack }: { law: any; onBack: () => void }) {
             </Section>
 
             <Section roman="III" title="별표·서식 / 별지·별첨" id="sec-tables">
-              {body.tables.length === 0 ? (
-                <p className="text-sm text-slate-400">별표·서식 없음 (별표는 주로 시행규칙·고시에 포함)</p>
-              ) : (
-                <ul className="space-y-2">
-                  {body.tables.map((t: any, i: number) => (
-                    <li key={i} className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-2.5 text-sm">
-                      <span className="text-slate-700">{t.no ? `[별표 ${t.no}] ` : ""}{t.title || "별표"}</span>
-                      <span className="flex gap-2 text-xs">
-                        {t.hwp && <a href={t.hwp} target="_blank" rel="noreferrer" className="rounded bg-slate-900 px-2.5 py-1 text-white hover:bg-slate-700">📄 HWP</a>}
-                        {t.pdf && <a href={t.pdf} target="_blank" rel="noreferrer" className="rounded bg-rose-600 px-2.5 py-1 text-white hover:bg-rose-500">📕 PDF</a>}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {(() => {
+                // 삭제된 빈 항목(파일 없음 + '삭제' 제목)은 제외하고, 별표/서식(별지)으로 분리.
+                const live = (body.tables || []).filter((t: any) => !( (t.title || "").startsWith("삭제") && !t.hwp && !t.pdf ));
+                if (live.length === 0) return <p className="text-sm text-slate-400">별표·서식 없음 (별표는 주로 시행규칙·고시에 포함)</p>;
+                const groups: [string, any[]][] = [
+                  ["별표", live.filter((t: any) => (t.gubun || "별표") === "별표")],
+                  ["서식(별지)", live.filter((t: any) => (t.gubun || "") === "서식")],
+                ];
+                const row = (t: any, label: string, i: number) => (
+                  <li key={`${label}-${i}`} className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-2.5 text-sm">
+                    <span className="text-slate-700">{t.no ? `[${label} ${t.no}] ` : ""}{t.title || label}</span>
+                    <span className="flex gap-2 text-xs">
+                      {t.hwp && <a href={t.hwp} target="_blank" rel="noreferrer" className="rounded bg-slate-900 px-2.5 py-1 text-white hover:bg-slate-700">📄 HWP</a>}
+                      {t.pdf && <a href={t.pdf} target="_blank" rel="noreferrer" className="rounded bg-rose-600 px-2.5 py-1 text-white hover:bg-rose-500">📕 PDF</a>}
+                    </span>
+                  </li>
+                );
+                return groups.filter(([, list]) => list.length > 0).map(([label, list]) => (
+                  <div key={label} className="mb-4">
+                    <div className="mb-1.5 text-sm font-semibold text-slate-500">{label} <span className="font-normal text-slate-400">{list.length}건</span></div>
+                    <ul className="space-y-2">{list.map((t: any, i: number) => row(t, label === "서식(별지)" ? "서식" : "별표", i))}</ul>
+                  </div>
+                ));
+              })()}
             </Section>
           </div>
 

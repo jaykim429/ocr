@@ -191,8 +191,14 @@ def get_law_body(seq: str, target: str = "eflaw") -> dict[str, Any]:
     for t in root.iter("별표단위"):
         hwp = txt(t, "별표서식파일링크")
         pdf = txt(t, "별표서식PDF파일링크")
+        no_raw = txt(t, "별표번호") or ""
+        branch = txt(t, "별표가지번호") or ""
+        no = no_raw.lstrip("0") or no_raw  # '0001' → '1'
+        if branch and branch.strip("0"):
+            no = f"{no}의{branch.lstrip('0')}"
         tables.append({
-            "no": txt(t, "별표번호"),
+            "gubun": txt(t, "별표구분") or "별표",  # '별표' / '서식'(별지서식) 구분
+            "no": no,
             "title": txt(t, "별표제목") or txt(t, "별표제목문자열"),
             "hwp": base + hwp if hwp else None,
             "pdf": base + pdf if pdf else None,

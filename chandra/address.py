@@ -182,19 +182,21 @@ def label_address_discrepancy(
     # VLM 의 '라벨 이미지 vs 공식주소' 대조에 판단을 맡긴다. (수내↔내수 같은 2글자+ 차이는 유지)
     if len(only_label) == 1 and len(only_official) == 1 and _edit_distance(only_label[0], only_official[0]) <= 1:
         return None
-    # 불일치가 '번지 등 숫자만' 다른지, '행정구역/도로명 명칭'이 다른지 구분한다.
-    diff_tokens = only_label + only_official
-    numeric_only = all(re.fullmatch(r"[\d\-]+", t) for t in diff_tokens) if diff_tokens else False
-    if numeric_only:
-        kind = "numeric"
-        hint = "번지 숫자 차이 — OCR 오인식과 실제 오기 모두 가능하므로 원본 이미지로 확인 필요"
-    else:
-        kind = "name"
-        hint = "행정구역/도로명 명칭 차이 — 실제 표시 오기 가능성이 높음(원본 이미지 확인)"
+    # 텍스트만으로는 'OCR 오인식'인지 '실제 표시 오기'인지 단정할 수 없다(예: 수내읍↔내수읍=오기,
+    # 송악읍↔승악음=OCR — 둘 다 글자수 차이가 같음). 그래서 추측하지 않고, 무엇이 다른지
+    # 사실만 중립적으로 제시하고 '원본 이미지로 확인'하도록 위임한다(오버피팅 방지).
+    _num = lambda t: bool(re.fullmatch(r"[\d\-]+", t))
+    num_l, num_o = [t for t in only_label if _num(t)], [t for t in only_official if _num(t)]
+    nm_l, nm_o = [t for t in only_label if not _num(t)], [t for t in only_official if not _num(t)]
+    parts: list[str] = []
+    if num_l or num_o:
+        parts.append(f"번지({'/'.join(num_l) or '-'} ↔ {'/'.join(num_o) or '-'})")
+    if nm_l or nm_o:
+        parts.append(f"행정구역/도로명({'/'.join(nm_l) or '-'} ↔ {'/'.join(nm_o) or '-'})")
+    kind = "numeric" if (num_l or num_o) and not (nm_l or nm_o) else ("name" if not (num_l or num_o) else "mixed")
     detail = (
-        f"표시사항 주소가 공식(품목제조보고서) 주소와 다릅니다 [{hint}] — "
-        f"표시사항 '{label_addr}' ↔ 공식 '{official_addr}'"
-        + (f" (차이: 표시사항={only_label} / 공식={only_official})" if (only_label or only_official) else "")
+        "표시사항 주소가 공식(품목제조보고서) 주소와 다릅니다 — 원본 이미지로 확인 필요. "
+        + f"차이: {', '.join(parts)}. (표시사항 '{label_addr}' ↔ 공식 '{official_addr}')"
     )
     return {
         "label": label_addr,

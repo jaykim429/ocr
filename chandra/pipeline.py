@@ -22,11 +22,14 @@ from typing import Any
 
 from chandra.extraction import (
     DOC_EVIDENCE,
+    DOC_FACTORY_REG,
     DOC_LABEL,
+    DOC_LICENSE,
     DOC_NUTRITION_CERT,
     DOC_PRODUCT_REPORT,
     DOC_SELF_QUALITY,
     DOC_UNKNOWN,
+    PERMIT_DOC_TYPES,
     classify_and_extract,
 )
 from chandra.license_check import LicenseCheckInput, check_license
@@ -321,7 +324,8 @@ def _merge_complementary_clusters(clusters: list[dict[str, Any]]) -> list[dict[s
 
 
 def _run_steps_for_product(
-    docs: list[dict[str, Any]], today: date | None
+    docs: list[dict[str, Any]], today: date | None,
+    permit_docs: list[dict[str, Any]] | None = None,
 ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """한 제품의 문서들로 1·2·3단계를 수행한다."""
     by_type: dict[str, dict[str, Any]] = {}
@@ -351,7 +355,7 @@ def _run_steps_for_product(
 
     # 1·2·3단계는 서로 독립(다른 문서·다른 판정) → 모델 호출을 병렬로 수행해 시간 단축
     def _step1() -> dict[str, Any]:
-        return _run_step1(by_type, mfr, labels)
+        return _run_step1(by_type, mfr, labels, permit_docs or [])
 
     def _step2() -> dict[str, Any]:
         from chandra.nutrition import convert_to_label_basis, nutrition_reference
@@ -465,11 +469,12 @@ def _run_steps_for_product(
     return by_type, steps
 
 
-def _run_step1(by_type: dict[str, Any], mfr: Any, labels: list[dict[str, Any]]) -> dict[str, Any]:
+def _run_step1(by_type: dict[str, Any], mfr: Any, labels: list[dict[str, Any]],
+               permit_docs: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """1단계: 인허가 적합성. 표시사항이 여러 개면 각각 검증한다."""
     labels = labels or []
     label_ext = labels[0] if labels else None
-    if not (mfr or label_ext):
+    if not (mfr or label_ext or permit_docs):
         return {"status": "건너뜀 (품목제조보고서/표시사항 없음)"}
 
     ref_address = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("address")
@@ -500,15 +505,29 @@ def _run_step1(by_type: dict[str, Any], mfr: Any, labels: list[dict[str, Any]]) 
                 "verification": verification,
             })
 
+    # 영업등록번호·업소명·주소가 보고서에 없으면 제출 인허가서류(영업등록증 등)에서 보완
+    permit_docs = permit_docs or []
+    permit_summary = [
+        {"종류": p.get("doc_type"), "업체명": p.get("business_name"), "소재지": p.get("address"),
+         "등록번호": p.get("license_no"), "대표자": p.get("representative")}
+        for p in permit_docs
+    ]
+    license_no = (mfr.license_no if mfr else None) or next(
+        (p.get("license_no") for p in permit_docs if p.get("doc_type") == DOC_LICENSE and p.get("license_no")), None)
+    biz_name = ref_name or next((p.get("business_name") for p in permit_docs if p.get("business_name")), None)
+    ref_address = ref_address or next(
+        (p.get("address") for p in permit_docs if p.get("doc_type") in (DOC_LICENSE, DOC_FACTORY_REG) and p.get("address")), None)
+
     lic_input = LicenseCheckInput(
-        business_name=ref_name,
-        license_no=mfr.license_no if mfr else None,
+        business_name=biz_name,
+        license_no=license_no,
         address=ref_address,
         representative=(by_type.get(DOC_PRODUCT_REPORT) or {}).get("representative"),
         label_business_name=(label_ext or {}).get("business_name"),
         label_address=(label_ext or {}).get("address"),
         label_verification=label_infos[0]["verification"] if label_infos else None,
         labels=label_infos,
+        permit_docs=permit_summary,
     )
     return check_license(lic_input).to_dict()
 
@@ -764,12 +783,15 @@ def run_quality_review(
     }
     provided_patents = {p for p in provided_patents if p}
 
+    # 제조사 인허가 서류(사업자등록증·영업등록증·공장등록증)는 업체 단위라 유닛 전체에서 공유 → 1단계 대조에 사용
+    permit_docs = [e for e in extractions if e.get("doc_type") in PERMIT_DOC_TYPES]
+
     clusters = _group_by_product(extractions)
     products: list[dict[str, Any]] = []
     for idx, cluster in enumerate(clusters, 1):
         nm = cluster.get("name") or "제품"
         _progress(f"품질 검토 중: {nm} (인허가·영양성분·자가품질·표시사항) — {idx}/{len(clusters)}")
-        by_type, steps = _run_steps_for_product(cluster["docs"], today)
+        by_type, steps = _run_steps_for_product(cluster["docs"], today, permit_docs=permit_docs)
         overall = _product_overall(steps)
         flags = collect_flags(steps)
         # 동일 업체·주소로 묶였으나 보고번호·제품명이 서류 간 불일치(OCR 오류 또는 다른 제품 서류 혼입)

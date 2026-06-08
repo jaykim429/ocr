@@ -64,6 +64,41 @@ def _demote_headings(md: str) -> str:
     )
 
 
+# 법조문 구조 라인(이것만 제목 유지) — 제N조/제N장·절·편·관/제N./부칙/별표·별지·서식·별첨
+_LAW_STRUCT = re.compile(
+    r"^(?:제\s*\d+\s*(?:조(?:의\s*\d+)?|[편장절관]|\.)|부\s*칙|\[?\s*(?:별표|별지|서식|별첨))"
+)
+
+
+def _normalize_law_headings(md: str) -> str:
+    """단일 고시 본문에서 kordoc 이 글꼴 크기를 따라 과승격한 제목을 평탄화한다.
+
+    HWPX→마크다운 변환 시 본문 줄(항·호·목·괄호조항 등)까지 글꼴 크기에 따라 ##/### 로
+    승격돼 화면 글씨 크기가 제각각 커진다. 법조문 구조(제N조/장/부칙/별표)만 ## 제목으로
+    통일하고 나머지 #~###### 줄은 일반 본문으로 내려 글씨 크기를 일관되게 만든다.
+    """
+    out: list[str] = []
+    for line in md.splitlines():
+        m = re.match(r"^#{1,6}\s+(.*\S)\s*$", line)
+        if not m:
+            out.append(line)
+            continue
+        text = m.group(1).strip()
+        out.append(f"## {text}" if _LAW_STRUCT.match(text) else text)
+    return "\n".join(out)
+
+
+def _maybe_normalize(md: str | None) -> str | None:
+    """멀티파트(식품공전 등, h1 파트헤더 보유)는 그대로, 단일 고시는 제목 평탄화.
+
+    멀티파트는 attachment_markdown 이 의도적으로 '# {파트명}' h1 을 붙이므로 그 구조를
+    보존한다(우측 네비 = h1 기반). h1 이 전혀 없으면 단일 고시로 보고 정규화한다. 멱등.
+    """
+    if not md or re.search(r"(?m)^#\s+\S", md):
+        return md
+    return _normalize_law_headings(md)
+
+
 def _flseq(link: str) -> str | None:
     m = re.search(r"flSeq=(\d+)", link)
     return m.group(1) if m else None
@@ -164,7 +199,8 @@ def attachment_markdown(link: str, *, refresh: bool = False) -> dict[str, object
     _CACHE.mkdir(parents=True, exist_ok=True)
     cache_file = _CACHE / f"{flseq}.md"
     if cache_file.exists() and not refresh:
-        return {"flseq": flseq, "markdown": cache_file.read_text(encoding="utf-8"), "parts": [], "cached": True}
+        md = _maybe_normalize(cache_file.read_text(encoding="utf-8"))
+        return {"flseq": flseq, "markdown": md, "parts": [], "cached": True}
 
     if not kordoc.available():
         return {"flseq": flseq, "markdown": None, "parts": [], "cached": False, "error": "kordoc 미설치"}
@@ -199,7 +235,7 @@ def attachment_markdown(link: str, *, refresh: bool = False) -> dict[str, object
 
     if markdown:
         cache_file.write_text(markdown, encoding="utf-8")
-    return {"flseq": flseq, "markdown": markdown or None, "parts": parts, "cached": False}
+    return {"flseq": flseq, "markdown": _maybe_normalize(markdown) or None, "parts": parts, "cached": False}
 
 
 def _primary_attachment_link(seq: str, target: str = "admrul") -> str | None:

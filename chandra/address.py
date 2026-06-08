@@ -177,23 +177,31 @@ def label_address_discrepancy(
     only_official = [t for t in tb if t not in ta]
     if not only_label and not only_official:
         return None
-    # 차이가 토큰 1:1 이고 그 두 토큰이 1글자 차이뿐이면(예: '각리1길'↔'각리니길', '1'↔'니')
-    # 한쪽 OCR/추출 오인식일 가능성이 매우 높다 → 결정적 플래그를 띄우지 않고(None) 4단계
-    # VLM 의 '라벨 이미지 vs 공식주소' 대조에 판단을 맡긴다. (수내↔내수 같은 2글자+ 차이는 유지)
-    if len(only_label) == 1 and len(only_official) == 1 and _edit_distance(only_label[0], only_official[0]) <= 1:
-        return None
-    # 텍스트만으로는 'OCR 오인식'인지 '실제 표시 오기'인지 단정할 수 없다(예: 수내읍↔내수읍=오기,
-    # 송악읍↔승악음=OCR — 둘 다 글자수 차이가 같음). 그래서 추측하지 않고, 무엇이 다른지
-    # 사실만 중립적으로 제시하고 '원본 이미지로 확인'하도록 위임한다(오버피팅 방지).
+
+    # 실제 표시 오기로 '결정적' 판단하는 신호는 두 가지뿐(나머지 글자 차이는 OCR 가능성이라
+    # 4단계 VLM 의 라벨 이미지 대조에 위임):
+    #   (1) 번지(숫자) 차이 — 예 '336-35'↔'336-66' (실제 차이가 의미 있음)
+    #   (2) 행정구역/도로명 명칭의 '전치(글자 순서 바뀜)' — 예 '수내읍'↔'내수읍'(같은 글자 재배열).
+    #       반면 '치환(글자 자체가 다름)' — '송악읍'↔'승낙음', '철곡'↔'칠곡' — 은 OCR 오인식으로 보고 제외.
     _num = lambda t: bool(re.fullmatch(r"[\d\-]+", t))
     num_l, num_o = [t for t in only_label if _num(t)], [t for t in only_official if _num(t)]
     nm_l, nm_o = [t for t in only_label if not _num(t)], [t for t in only_official if not _num(t)]
+
+    transposed = [
+        (a, b) for a in nm_l for b in nm_o
+        if a != b and sorted(a) == sorted(b)  # 같은 글자 집합·다른 순서 = 전치
+    ]
+
     parts: list[str] = []
     if num_l or num_o:
         parts.append(f"번지({'/'.join(num_l) or '-'} ↔ {'/'.join(num_o) or '-'})")
-    if nm_l or nm_o:
-        parts.append(f"행정구역/도로명({'/'.join(nm_l) or '-'} ↔ {'/'.join(nm_o) or '-'})")
-    kind = "numeric" if (num_l or num_o) and not (nm_l or nm_o) else ("name" if not (num_l or num_o) else "mixed")
+    if transposed:
+        parts.append("행정구역/도로명 글자순서 다름(" + ", ".join(f"{a}↔{b}" for a, b in transposed) + ")")
+    if not parts:
+        # 번지 동일 + 명칭은 글자치환(OCR 추정) → 결정적 플래그 안 띄우고 VLM 이미지 판단에 위임
+        return None
+
+    kind = "numeric" if (num_l or num_o) and not transposed else ("transposition" if transposed and not (num_l or num_o) else "mixed")
     detail = (
         "표시사항 주소가 공식(품목제조보고서) 주소와 다릅니다 — 원본 이미지로 확인 필요. "
         + f"차이: {', '.join(parts)}. (표시사항 '{label_addr}' ↔ 공식 '{official_addr}')"

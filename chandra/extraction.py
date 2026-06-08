@@ -528,7 +528,13 @@ def classify_and_extract(
                 except Exception:  # noqa: BLE001
                     pass
             if single:
-                result = refind_missing_fields(result, images, extra=suspect, **gemma_opts)
+                # 영업등록번호(license_no)는 품목제조보고서/인허가서류가 권위 출처다.
+                # 성적서·표시사항·영양성적서엔 거의 없어, 이 한 필드 null 때문에 불필요한
+                # refind VLM 호출이 자주 트리거된다 → 비보고서 문서에선 chase 대상에서 제외.
+                rf = list(_REFIND_FIELDS)
+                if result["doc_type"] != DOC_PRODUCT_REPORT:
+                    rf = [f for f in rf if f != "license_no"]
+                result = refind_missing_fields(result, images, fields=rf, extra=suspect, **gemma_opts)
             else:
                 result = refind_missing_fields(
                     result, images,

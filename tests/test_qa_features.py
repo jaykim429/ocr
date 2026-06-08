@@ -433,3 +433,42 @@ def test_jobs_persistence(monkeypatch, tmp_path):
     assert len(lst) == 1
     assert lst[0]["overall"] == "부적합"  # units 전체 최악
     assert "result" not in lst[0]  # 목록에는 결과 본문 제외
+
+
+# ---------------------------------------------------------------------------
+# 감시목록 고시 → 표시사항 자동연결(프롬프트 그라운딩) 트리거 검증
+# ---------------------------------------------------------------------------
+def test_law_rules_gmo_trigger_on_crop_only():
+    from chandra.law_rules import applicable_rules
+
+    names = lambda ft, t: [r["name"] for r in applicable_rules(ft, t)]
+    # 대두(GMO 작물) → GMO 표시기준 적용
+    assert "유전자변형식품등의 표시기준" in names("가공두유", "원재료 대두, 정제수")
+    # 수산물(천일염·명태) → GMO 작물 없음 → 미적용
+    assert "유전자변형식품등의 표시기준" not in names("기타수산물가공품", "명태 천일염")
+
+
+def test_law_rules_haccp_only_when_marked():
+    from chandra.law_rules import applicable_rules
+
+    names = lambda ft, t: [r["name"] for r in applicable_rules(ft, t)]
+    assert "식품 및 축산물 안전관리인증기준" in names("과자", "HACCP 인증 제품")
+    assert "식품 및 축산물 안전관리인증기준" not in names("과자", "밀 설탕")
+
+
+def test_law_rules_haccp_check_keyword():
+    """식품유형이 건강기능식품일 때만 건기식 표시기준 적용."""
+    from chandra.law_rules import applicable_rules
+
+    names = lambda ft, t: [r["name"] for r in applicable_rules(ft, t)]
+    assert "건강기능식품의 표시기준" in names("건강기능식품", "홍삼농축액")
+    assert "건강기능식품의 표시기준" not in names("가공두유", "대두")
+
+
+def test_law_rules_grounding_block_contains_applied():
+    from chandra.law_rules import grounding_block
+
+    block = grounding_block("가공두유", "원재료 대두 / 포장재질 멸균팩 / HACCP")
+    assert "유전자변형식품등의 표시기준" in block
+    assert "분리배출" in block
+    assert block.startswith("\n\n[적용 법령")

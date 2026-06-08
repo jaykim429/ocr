@@ -106,10 +106,18 @@ def review_label_disclosures(
         "다만 라벨 글자가 또렷하게 읽혀 명백히 다른 주소인 경우에 한해 그 사실을 적시할 수 있습니다."
         if official_address else ""
     )
+    # 감시목록 고시 → 자동연결: 제품 속성(원재료·포장재·인증마크·식품유형)에 해당하는
+    # 표시의무 요지만 골라 '적용 법령 근거'로 주입한다(판정은 Gemma 수행).
+    from chandra.law_rules import applicable_rules, grounding_block
+
+    law_text = f"{fields}\n{ocr}"
+    applied = applicable_rules(fields["식품유형"], law_text)
+    evidence["적용_법령근거"] = [r["name"] for r in applied]
     user = (
         "다음 표시사항(라벨)을 보고 의무 표시항목 충족 여부를 점검하세요. 라벨 이미지가 있으면 "
         "이미지를 우선 근거로 삼고, OCR 텍스트는 보조로만 활용하세요.\n\n"
         f"추출필드: {fields}\n\n표시사항 텍스트(OCR):\n{ocr[:9000]}" + addr_check
+        + grounding_block(fields["식품유형"], law_text)
     )
     # 선명한 시안 라벨은 OCR 보다 이미지(VLM) 판독이 정확하므로 라벨 이미지를 함께 전달한다.
     images = None

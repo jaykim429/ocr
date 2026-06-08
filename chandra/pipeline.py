@@ -97,6 +97,29 @@ def _to_manufacture(ext: dict[str, Any] | None) -> ManufactureReport | None:
     )
 
 
+def _issue_date_from_ocr(ocr: str | None) -> str | None:
+    """성적서 OCR 원문에서 발급일(발행일/검사완료일)을 회수한다(Gemma 누락 보완).
+
+    Gemma 가 작은 글씨의 발급일을 놓치는 사례가 있어, '발급/발행/검사완료일' 라벨 뒤의
+    YYYY(년/.-)MM(월/.-)DD 날짜를 찾아 'YYYY-MM-DD' 로 돌려준다. 없으면 None.
+    """
+    import re
+
+    if not ocr:
+        return None
+    m = re.search(
+        r"(?:발급일|발행일|검사완료일|발급년월일|발급 연월일)\D{0,8}"
+        r"(\d{4})\s*[.\-년]\s*(\d{1,2})\s*[.\-월]\s*(\d{1,2})",
+        ocr,
+    )
+    if not m:
+        return None
+    y, mo, d = (int(g) for g in m.groups())
+    if not (2000 <= y <= 2100 and 1 <= mo <= 12 and 1 <= d <= 31):
+        return None
+    return f"{y:04d}-{mo:02d}-{d:02d}"
+
+
 def _to_certificate(ext: dict[str, Any] | None) -> QualityCertificate | None:
     if not ext:
         return None
@@ -122,12 +145,13 @@ def _to_certificate(ext: dict[str, Any] | None) -> QualityCertificate | None:
         test_agency_address=ext.get("test_agency_address"),
         manufacturer=ext.get("business_name"),
         manufacturer_address=ext.get("address"),
-        issue_date=ext.get("issue_date"),
+        issue_date=ext.get("issue_date") or _issue_date_from_ocr(ext.get("_ocr_text")),
         test_completed_date=ext.get("test_completed_date"),
         test_purpose=ext.get("test_purpose"),
         ingredients=ext.get("ingredients") or [],
         items=items,
         overall_text=ext.get("overall"),
+        ocr_text=ext.get("_ocr_text"),  # 성적서 원본 OCR(고유명사 교차대조 권위)
     )
 
 
@@ -413,7 +437,8 @@ def _run_steps_for_product(
     def _step3() -> dict[str, Any]:
         if cert:
             label_list = [
-                {"product_name": e.get("product_name"), "business_name": e.get("business_name"), "address": e.get("address")}
+                {"product_name": e.get("product_name"), "business_name": e.get("business_name"),
+                 "address": e.get("address"), "text": e.get("_ocr_text")}
                 for e in labels
             ]
             # 원재료(보고서·라벨·성적서)를 모아 '사용 첨가물' 판단 근거로 — 미사용 첨가물 검사항목은 누락 아님

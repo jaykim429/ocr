@@ -74,9 +74,11 @@ class QualityCertificate:
     ingredients: list[str] = field(default_factory=list)  # 원재료명(사용 첨가물 판단용)
     items: list[ReportTestItem] = field(default_factory=list)
     overall_text: str | None = None  # 종합판정
+    ocr_text: str | None = None  # 성적서 원본 OCR 텍스트(고유명사 교차대조 권위)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
+        data.pop("ocr_text", None)  # 원본 OCR 은 출력에서 제외(용량·노이즈)
         return data
 
 
@@ -389,6 +391,25 @@ def _criteria_equal(a: Criteria | None, b: Criteria | None) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _alnum_ko(s: str) -> str:
+    """공백·문장부호를 제거하고 한글/영숫자만 남긴다(OCR 원문 포함여부 대조용)."""
+    return "".join(c for c in (s or "") if c.isalnum())
+
+
+# 표시사항 '조리법' 단서 — 있으면 '더 이상 가공·가열조리 없이 그대로 섭취하는 제품'이 아니다.
+_COOKING_KW = (
+    "조리법", "조리방법", "조리시", "조리 시", "조리하여", "조리해", "끓", "데워", "데우",
+    "가열하여", "가열 후", "익혀", "익힌", "쑤어", "전자레인지", "프라이팬",
+    "삶아", "데쳐", "볶아", "구워",
+)
+
+
+def _requires_cooking(text: str | None) -> bool:
+    """표시사항 등 텍스트에 조리·가열 단서가 있으면 True(그대로 섭취 제품 아님)."""
+    t = (text or "").replace(" ", "")
+    return any(kw.replace(" ", "") in t for kw in _COOKING_KW)
+
+
 def _values_match(a: str | None, b: str | None) -> bool:
     """OCR 오인식(예: 삼향↔삼황)·법인표기 차이를 흡수하도록 정확/부분/퍼지 매칭."""
     if not a or not b:
@@ -415,12 +436,24 @@ def cross_check_documents(
         ),
         ("영업자/제조원", manufacture.business_name, certificate.manufacturer),
     ]
+    # 성적서 원본 OCR(스캔 고유명사 권위). Gemma 가 작은 글씨를 오독해도 OCR 엔 정답이 남는다.
+    cert_ocr_norm = _alnum_ko(certificate.ocr_text or "")
+
     matches: list[FieldMatch] = []
     reasons: list[str] = []
     for field_name, mv, cv in pairs:
         if mv is None and cv is None:
             continue
         ok = _values_match(mv, cv)
+        # OCR 권위 가드: 성적서 Gemma 추출값(cv)이 보고서(mv)와 달라도, 보고서 값이 성적서
+        # OCR 원문에 그대로 존재하면 성적서 추출 오독으로 보고 '일치'로 본다(false 불일치 방지).
+        if (not ok and field_name in ("제품명", "영업자/제조원")
+                and cert_ocr_norm and mv and _alnum_ko(mv) in cert_ocr_norm):
+            ok = True
+            reasons.append(
+                f"{field_name}: 성적서 추출값('{cv}')은 원문과 불일치하나 보고서값('{mv}')이 "
+                "성적서 OCR 원문에 존재 → OCR 기준 일치(성적서 추출 오독으로 판단)"
+            )
         matches.append(FieldMatch(field_name, mv, cv, ok))
         if not ok:
             reasons.append(f"{field_name} 불일치: 보고서='{mv}' vs 성적서='{cv}'")
@@ -586,6 +619,9 @@ _SELF_QUALITY_JUDGE_SYSTEM = """당신은 식품 품질검토 전문가입니다
       마찬가지). 제품이 그 조건에 해당하지 않으면 '검사 대상이 아님' = 누락이 아니다. 예:
         - 세균수 "n=5,c=0,m=0(멸균제품에 한한다)" → 비살균/살균(비멸균) 제품엔 세균수 검사 의무 없음.
         - 대장균 "(비살균제품 중 그대로 섭취…에 한한다)" / 대장균군 "(살균제품에 한한다)" → 제품 특성에 맞는 한쪽만 의무.
+        - ★evidence '조리필요_그대로섭취아님'=true 이면 표시사항에 조리법(끓여/조리하여 등)이 있는
+          제품이다 → '더 이상 가공·가열조리 없이 그대로 섭취하는 제품에 한한다'는 조건이 붙은 항목
+          (예: 대장균)은 이 제품에 적용되지 않으므로 '검사 대상 아님'이며 절대 '누락'으로 보지 말 것.
         - 무기비소 "(현미·미강·톳 등 사용 식품에 한함)" / 과산화물가·산가 "(유탕·유처리식품에 한한다)" 등.
       성적서에 대장균(비살균·가열섭취 조건)이 검사돼 있으면 그 제품은 멸균이 아니므로, '멸균제품에 한한다'
       인 세균수는 면제 — 절대 '세균수 누락/부적합'으로 보지 말 것.
@@ -809,6 +845,12 @@ def build_self_quality_evidence(
             if is_livestock else None
         ),
         "품목특성": product_traits or None,  # 품목제조보고서 '품목의 특성'(살균구분·영양표시의무 등)
+        # 표시사항 조리법 단서(끓여/조리법 등) → '그대로 섭취하는 제품'이 아님 → 대장균 등
+        # '그대로 섭취 제품 한정' 항목은 검사 대상 아님(누락으로 보지 말 것).
+        "조리필요_그대로섭취아님": _requires_cooking(
+            " ".join(str(l.get("text") or "") for l in (labels or []))
+            + " " + (certificate.ocr_text or "")
+        ),
         "식품공전_규격_식품안전나라": {
             "출처": "식품안전나라 식품공전 OpenAPI(I0930)",
             "항목수": len(live_spec),

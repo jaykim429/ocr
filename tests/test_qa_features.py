@@ -472,3 +472,41 @@ def test_law_rules_grounding_block_contains_applied():
     assert "유전자변형식품등의 표시기준" in block
     assert "분리배출" in block
     assert block.startswith("\n\n[적용 법령")
+
+
+# ---------------------------------------------------------------------------
+# 성적서 OCR 권위 교차대조 가드 + 조리법→그대로섭취 아님(대장균 면제)
+# ---------------------------------------------------------------------------
+def test_cross_check_ocr_authority_resolves_misread():
+    """성적서 Gemma 추출이 오독(한돌/토마토)해도 OCR 원문에 보고서값이 있으면 일치 처리."""
+    from chandra.self_quality import (
+        ManufactureReport, QualityCertificate, cross_check_documents,
+    )
+
+    ocr = "제품명 한둘국산 도토리묵가루 전분 업체명 농업회사법인 한둘 주식회사"
+    cert = QualityCertificate(product_name="한돌 국산 토마토가루 전분",
+                              manufacturer="농업회사법인 한돌 주식회사",
+                              food_type="전분가공품", ocr_text=ocr)
+    mfr = ManufactureReport(product_name="한둘 국산 도토리묵가루 전분",
+                            business_name="농업회사법인 한둘(주)", food_type="전분가공품")
+    assert cross_check_documents(mfr, cert).consistent is True
+
+
+def test_cross_check_real_mismatch_still_flagged():
+    """OCR 원문에도 보고서값이 없으면(진짜 다른 서류) 불일치로 잡는다."""
+    from chandra.self_quality import (
+        ManufactureReport, QualityCertificate, cross_check_documents,
+    )
+
+    cert = QualityCertificate(product_name="완전 다른 제품", food_type="과자류",
+                              ocr_text="완전 다른 제품 다른회사")
+    mfr = ManufactureReport(product_name="한둘 국산 도토리묵가루 전분", food_type="전분가공품")
+    assert cross_check_documents(mfr, cert).consistent is False
+
+
+def test_requires_cooking_detection():
+    from chandra.self_quality import _requires_cooking
+
+    assert _requires_cooking("조리방법: 끓는 물에 풀어 끓여 드세요") is True
+    assert _requires_cooking("냄비에 묵가루와 물을 넣고 저어주며 끓입니다") is True
+    assert _requires_cooking("개봉 후 그대로 드시면 됩니다") is False

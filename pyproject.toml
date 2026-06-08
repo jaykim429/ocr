@@ -31,7 +31,9 @@ qa = [
     "python-multipart>=0.0.9",
     "pyjwt>=2.8.0",
     "bcrypt>=4.0.0",
-    "easyocr>=1.7.0",
+    "paddleocr>=3.0.0",
+    "paddlepaddle>=3.0.0",
+    "opencv-contrib-python>=4.10.0",
     "numpy>=1.26.0",
 ]
 hf = [

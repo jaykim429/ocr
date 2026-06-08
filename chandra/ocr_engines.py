@@ -1,10 +1,15 @@
-"""전용 OCR 엔진 래퍼 (하이브리드 판독용).
+"""전용 OCR 엔진 래퍼 (하이브리드 판독용) — PaddleOCR(PP-OCRv5 한국어) 기반.
 
 Gemma 비전 단독은 스캔본 한글 고유명사를 글자 단위로 오인식하는 경향이 있다.
-전용 한글 OCR(EasyOCR)로 문자 정확도가 높은 raw 텍스트를 먼저 뽑고, 이를 Gemma 에
+전용 한글 OCR(PaddleOCR)로 문자 정확도가 높은 raw 텍스트를 먼저 뽑고, 이를 Gemma 에
 '한글 표기 기준'으로 함께 전달하면 정확도가 올라간다.
 
-EasyOCR 미설치 환경에서는 None 을 반환해 Gemma 비전 단독으로 폴백한다.
+벤치마크 결과(samples/): PaddleOCR ≫ EasyOCR(제조사명·주소 한글 판독). 저화질 스캔은
+CLAHE 전처리가 크게 도움(원본 340 → CLAHE 754), 깨끗한 문서는 원본이 약간 우세 →
+ocr_image_best 는 원본·CLAHE 를 모두 돌려 점수 높은 쪽을 채택(best-of-2)한다.
+
+PaddleOCR 미설치/초기화 실패 시 None 을 반환해 Gemma 비전 단독으로 폴백한다.
+폐쇄망: 첫 사용 시 다운로드되는 모델(~/.paddlex/official_models: korean rec + det)을 함께 번들.
 """
 
 from __future__ import annotations
@@ -12,40 +17,88 @@ from __future__ import annotations
 import threading
 
 import numpy as np
-from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+from PIL import Image, ImageOps
 
-_reader = None
-_reader_failed = False
-_reader_lock = threading.Lock()  # 병렬 추출 시 Reader 중복 생성/경쟁 방지
+_ocr = None
+_ocr_failed = False
+_ocr_lock = threading.Lock()  # 병렬 추출 시 엔진 중복 생성/경쟁 방지
 
 
 def available() -> bool:
     import importlib.util
 
-    return importlib.util.find_spec("easyocr") is not None
+    return importlib.util.find_spec("paddleocr") is not None
 
 
-def _get_reader():
-    global _reader, _reader_failed
-    if _reader is not None or _reader_failed:
-        return _reader
-    with _reader_lock:  # 더블체크: 락 안에서 다시 확인(다른 스레드가 이미 생성했을 수 있음)
-        if _reader is not None or _reader_failed:
-            return _reader
+def _get_ocr():
+    global _ocr, _ocr_failed
+    if _ocr is not None or _ocr_failed:
+        return _ocr
+    with _ocr_lock:  # 더블체크
+        if _ocr is not None or _ocr_failed:
+            return _ocr
         try:
-            import easyocr
+            from paddleocr import PaddleOCR
 
-            _reader = easyocr.Reader(["ko", "en"], gpu=False)
+            # 업라이트 인쇄 문서가 대부분이라 페이지 방향보정·왜곡보정(UVDoc, 느림)은 끈다.
+            _ocr = PaddleOCR(
+                lang="korean",
+                use_doc_orientation_classify=False,
+                use_doc_unwarping=False,
+                use_textline_orientation=False,
+            )
         except Exception:  # noqa: BLE001 - 미설치/초기화 실패 시 폴백
-            _reader_failed = True
-            _reader = None
-    return _reader
+            _ocr_failed = True
+            _ocr = None
+    return _ocr
+
+
+def _clahe(image: Image.Image) -> Image.Image:
+    """국소 대비 개선(CLAHE) — 저대비/저화질 스캔의 한글 판독률을 크게 높인다."""
+    try:
+        import cv2
+
+        arr = np.array(image.convert("RGB"))
+        gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+        cl = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(gray)
+        return Image.fromarray(cv2.cvtColor(cl, cv2.COLOR_GRAY2RGB))
+    except Exception:  # noqa: BLE001 - cv2 미설치 등 → autocontrast 폴백
+        return ImageOps.autocontrast(image.convert("RGB"), cutoff=2)
+
+
+def _predict(image: Image.Image):
+    """PaddleOCR 실행 → [(box, text, conf), ...] (없으면 None)."""
+    ocr = _get_ocr()
+    if ocr is None:
+        return None
+    try:
+        res = ocr.predict(np.array(image.convert("RGB")))
+    except Exception:  # noqa: BLE001
+        return None
+    out = []
+    for r in res or []:
+        try:
+            d = dict(r)
+        except Exception:  # noqa: BLE001
+            d = getattr(r, "json", {}) or {}
+        texts = d.get("rec_texts") or []
+        scores = d.get("rec_scores") or [1.0] * len(texts)
+        polys = d.get("rec_polys") or d.get("dt_polys") or [None] * len(texts)
+        for box, text, conf in zip(polys, texts, scores):
+            if text:
+                out.append((box, str(text), float(conf)))
+    return out
 
 
 def _group_lines(results, y_tol: int = 12) -> str:
-    """(bbox, text, conf) 목록을 위→아래, 좌→우 순으로 줄 단위 정렬해 합친다."""
+    """(box, text, conf) 목록을 위→아래, 좌→우 순으로 줄 단위 정렬해 합친다.
+
+    box 가 없으면(좌표 미제공) 입력 순서(PaddleOCR 읽기순)를 그대로 줄바꿈으로 잇는다.
+    """
+    if results and results[0][0] is None:
+        return "\n".join(t for _b, t, _c in results)
     items = []
-    for box, text, conf in results:
+    for box, text, _conf in results:
         ys = [p[1] for p in box]
         xs = [p[0] for p in box]
         items.append((min(ys), min(xs), text))
@@ -61,103 +114,29 @@ def _group_lines(results, y_tol: int = 12) -> str:
     return "\n".join(" ".join(line) for line in lines)
 
 
-def _readtext(image: Image.Image):
-    reader = _get_reader()
-    if reader is None:
-        return None
-    try:
-        return reader.readtext(np.array(image.convert("RGB")), detail=1, paragraph=False)
-    except Exception:  # noqa: BLE001
-        return None
+def _score(results) -> float:
+    return sum(len(t) * c for _b, t, c in results) if results else 0.0
 
 
 def ocr_image(image: Image.Image) -> str | None:
     """이미지를 한글 OCR 하여 레이아웃 순서 텍스트를 반환. 불가 시 None."""
-    results = _readtext(image)
-    return _group_lines(results) if results is not None else None
+    results = _predict(image)
+    return _group_lines(results) if results else None
 
 
-def _cv_variants(rgb: Image.Image):
-    """OpenCV/skimage 기반 전처리 (CLAHE, Adaptive/Otsu/Sauvola 이진화). 미설치 시 생략."""
-    try:
-        import cv2
-    except Exception:  # noqa: BLE001
-        return
-    arr = np.array(rgb)
-    gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
+def ocr_image_best(image: Image.Image, variants: int = 0) -> tuple[str | None, str]:
+    """원본·CLAHE 를 모두 OCR 해 점수가 높은 결과를 채택(best-of-2).
 
-    # CLAHE (국소 대비 개선) — 문서 OCR에 특히 유용
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(gray)
-    yield "clahe", Image.fromarray(cv2.cvtColor(clahe, cv2.COLOR_GRAY2RGB))
-
-    # Otsu (배경 균일 문서)
-    _t, otsu = cv2.threshold(clahe, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    yield "otsu", Image.fromarray(cv2.cvtColor(otsu, cv2.COLOR_GRAY2RGB))
-
-    # Adaptive (조명 편차 문서)
-    adaptive = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 15
-    )
-    yield "adaptive", Image.fromarray(cv2.cvtColor(adaptive, cv2.COLOR_GRAY2RGB))
-
-    # Sauvola (오래된/얼룩 문서) — skimage 있을 때만
-    try:
-        from skimage.filters import threshold_sauvola
-
-        th = threshold_sauvola(gray, window_size=25)
-        sau = ((gray > th) * 255).astype("uint8")
-        yield "sauvola", Image.fromarray(cv2.cvtColor(sau, cv2.COLOR_GRAY2RGB))
-    except Exception:  # noqa: BLE001
-        pass
-
-
-def _preprocess_variants(image: Image.Image):
-    """OCR 정확도 향상을 위한 전처리 변형들.
-
-    원본·그레이/대비·밝기·샤픈·단순이진화 + (OpenCV) CLAHE·Otsu·Adaptive·Sauvola.
-    원본/그레이/이진화를 함께 비교하는 것이 안정적이라는 권장에 따른 구성.
+    저화질 스캔은 CLAHE 가, 깨끗한 문서는 원본이 우세 → 이미지별로 자동 적응.
+    variants 인자는 하위호환용(무시). 반환: (best_text, 사용된 전처리명).
     """
-    # 고가치 변형을 앞에 둔다 → variants=N 으로 잘라 쓸 때 가장 유용한 것부터 사용.
-    rgb = image.convert("RGB")
-    yield "original", rgb
-    yield "autocontrast", ImageOps.autocontrast(rgb, cutoff=2)
-    yield "sharpen", ImageEnhance.Sharpness(rgb).enhance(2.2)
-    yield "contrast+", ImageEnhance.Contrast(rgb).enhance(1.6)
-    yield "bright+", ImageEnhance.Brightness(rgb).enhance(1.35)
-    # 글씨 굵기 조절 — 어두운 글자 기준 MinFilter=굵게(끊긴 획 보강), MaxFilter=얇게(번짐 제거)
-    gray = ImageOps.grayscale(ImageOps.autocontrast(rgb, cutoff=2))
-    yield "thicken", gray.filter(ImageFilter.MinFilter(3)).convert("RGB")
-    yield "thinner", gray.filter(ImageFilter.MaxFilter(3)).convert("RGB")
-    yield "binarize", gray.point(lambda p: 255 if p > 160 else 0).convert("RGB")
-    yield from _cv_variants(rgb)
-
-
-def _score(results) -> tuple[float, int]:
-    """OCR 결과 점수: (신뢰도 가중 글자수, 박스수). 높을수록 좋음."""
-    if not results:
-        return 0.0, 0
-    score = sum(len(str(text)) * float(conf) for _box, text, conf in results)
-    return score, len(results)
-
-
-def ocr_image_best(
-    image: Image.Image, variants: int = 0
-) -> tuple[str | None, str]:
-    """여러 전처리 변형으로 OCR 해보고 가장 잘 읽힌 결과를 고른다.
-
-    variants=0 이면 전체 시도. 반환: (best_text, 사용된 변형명).
-    """
-    reader = _get_reader()
-    if reader is None:
+    base = _predict(image)
+    if not available():
         return None, "none"
-    best_text, best_name, best_score = None, "none", -1.0
-    for i, (name, img) in enumerate(_preprocess_variants(image)):
-        if variants and i >= variants:
-            break
-        results = _readtext(img)
-        if results is None:
-            continue
-        sc, _n = _score(results)
-        if sc > best_score:
-            best_score, best_text, best_name = sc, _group_lines(results), name
-    return best_text, best_name
+    clahe = _predict(_clahe(image))
+    cands = [("원본", base), ("clahe", clahe)]
+    cands = [(n, r) for n, r in cands if r]
+    if not cands:
+        return None, "none"
+    name, best = max(cands, key=lambda nr: _score(nr[1]))
+    return _group_lines(best), name

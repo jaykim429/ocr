@@ -609,7 +609,14 @@ def _resolve_food_type(by_type: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if not cands:
         return {"value": None, "source": None, "candidates": [], "mismatch": False, "registered": None}
     value, source = cands[0][1], cands[0][0]
-    mismatch = len({collapse(v) for _, v in cands}) > 1
+    # 한 값이 다른 값의 부분문자열이면(예: '수산물가공품' ⊂ '기타수산물가공품' — 접두 누락 OCR/추출)
+    # 같은 계열로 보고 불일치로 띄우지 않으며, 더 구체적인(긴) 표기를 채택한다.
+    norms = [collapse(v) for _, v in cands]
+    _compat = lambda a, b: a == b or a in b or b in a
+    distinct = set(norms)
+    mismatch = any(not _compat(x, y) for x in distinct for y in distinct)
+    if not mismatch and len(distinct) > 1:
+        source, value = max(cands, key=lambda dv: len(collapse(dv[1])))
 
     def _registered(v: str) -> bool | None:
         try:

@@ -107,17 +107,16 @@ def _issue_date_from_ocr(ocr: str | None) -> str | None:
 
     if not ocr:
         return None
-    m = re.search(
-        r"(?:발급일|발행일|검사완료일|발급년월일|발급 연월일)\D{0,8}"
-        r"(\d{4})\s*[.\-년]\s*(\d{1,2})\s*[.\-월]\s*(\d{1,2})",
-        ocr,
-    )
-    if not m:
-        return None
-    y, mo, d = (int(g) for g in m.groups())
-    if not (2000 <= y <= 2100 and 1 <= mo <= 12 and 1 <= d <= 31):
-        return None
-    return f"{y:04d}-{mo:02d}-{d:02d}"
+    date = r"(\d{4})\s*[.\-년]\s*(\d{1,2})\s*[.\-월]\s*(\d{1,2})"
+    # 발급/발행일을 우선한다. 검사완료일은 발급일보다 이를 수 있어(유효기간을 더 짧게 잡아
+    # 거짓 만료) 발급/발행이 없을 때만 차순위로 사용한다.
+    for label in (r"발급일|발행일|발급년월일|발급\s*연월일", r"검사완료일|시험완료일"):
+        m = re.search(rf"(?:{label})\D{{0,8}}{date}", ocr)
+        if m:
+            y, mo, d = (int(g) for g in m.groups())
+            if 2000 <= y <= 2100 and 1 <= mo <= 12 and 1 <= d <= 31:
+                return f"{y:04d}-{mo:02d}-{d:02d}"
+    return None
 
 
 def _to_certificate(ext: dict[str, Any] | None) -> QualityCertificate | None:

@@ -510,3 +510,30 @@ def test_requires_cooking_detection():
     assert _requires_cooking("조리방법: 끓는 물에 풀어 끓여 드세요") is True
     assert _requires_cooking("냄비에 묵가루와 물을 넣고 저어주며 끓입니다") is True
     assert _requires_cooking("개봉 후 그대로 드시면 됩니다") is False
+
+
+# ---------------------------------------------------------------------------
+# 보편성(오버피팅 방지) 가드: 짧은 일반명 거짓일치 방지 / 발급일 우선순위
+# ---------------------------------------------------------------------------
+def test_cross_check_guard_ignores_short_generic_name():
+    """짧고 일반적인 명칭(김치)은 다른 성적서에 우연히 포함돼도 일치로 보지 않는다."""
+    from chandra.self_quality import (
+        ManufactureReport, QualityCertificate, cross_check_documents,
+    )
+
+    # cert 추출(주스류)은 보고서(우유)와 불일치. 보고서값 '우유'(2자)가 cert OCR에 우연히
+    # 포함('초코우유')돼도 변별력 부족(6자 미만)이라 가드 미적용 → 불일치 유지.
+    cert = QualityCertificate(product_name="주스류",
+                              ocr_text="초코우유 외 1종 시험성적서")
+    mfr = ManufactureReport(product_name="우유")
+    assert cross_check_documents(mfr, cert).consistent is False
+
+
+def test_issue_date_prefers_issuance_over_completion():
+    """발급일/발행일이 있으면 검사완료일보다 우선(검사완료가 더 이르면 거짓 만료 방지)."""
+    from chandra.pipeline import _issue_date_from_ocr
+
+    ocr = "검사완료일 2025-01-10 ... 발급일 2025-03-20"
+    assert _issue_date_from_ocr(ocr) == "2025-03-20"
+    # 발급/발행 라벨이 없으면 검사완료일을 차순위로 사용
+    assert _issue_date_from_ocr("검사완료일 2025-10-31 접수 2025-10-28") == "2025-10-31"

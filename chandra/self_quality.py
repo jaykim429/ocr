@@ -447,8 +447,11 @@ def cross_check_documents(
         ok = _values_match(mv, cv)
         # OCR 권위 가드: 성적서 Gemma 추출값(cv)이 보고서(mv)와 달라도, 보고서 값이 성적서
         # OCR 원문에 그대로 존재하면 성적서 추출 오독으로 보고 '일치'로 본다(false 불일치 방지).
+        # 단, 짧고 일반적인 명칭("김치"·"주식회사")이 다른 제품 성적서에 우연히 포함돼 거짓
+        # 일치하는 것을 막기 위해 변별력 있는 길이(정규화 6자 이상)일 때만 적용한다.
         if (not ok and field_name in ("제품명", "영업자/제조원")
-                and cert_ocr_norm and mv and _alnum_ko(mv) in cert_ocr_norm):
+                and cert_ocr_norm and mv and len(_alnum_ko(mv)) >= 6
+                and _alnum_ko(mv) in cert_ocr_norm):
             ok = True
             reasons.append(
                 f"{field_name}: 성적서 추출값('{cv}')은 원문과 불일치하나 보고서값('{mv}')이 "

@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 import urllib.parse
 import urllib.request
@@ -134,7 +135,9 @@ def get_law_body(seq: str, target: str = "eflaw") -> dict[str, Any]:
 
     def txt(el, tag: str) -> str | None:
         e = el.find(tag)
-        return e.text.strip() if e is not None and e.text and e.text.strip() else None
+        if e is None or not e.text or not e.text.strip():
+            return None
+        return html.unescape(e.text.strip())  # '&lt;2016.2.4.&gt;' → '<2016.2.4.>'
 
     name = None
     for tag in ("법령명_한글", "법령명한글", "행정규칙명"):

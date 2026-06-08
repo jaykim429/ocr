@@ -242,7 +242,7 @@ function LawDetail({ law, onBack }: { law: any; onBack: () => void }) {
                   </li>
                 );
                 return groups.filter(([, list]) => list.length > 0).map(([label, list]) => (
-                  <div key={label} className="mb-4">
+                  <div key={label} id={label === "서식(별지)" ? "sec-서식" : "sec-별표"} className="mb-4 scroll-mt-4">
                     <div className="mb-1.5 text-sm font-semibold text-slate-500">{label} <span className="font-normal text-slate-400">{list.length}건</span></div>
                     <ul className="space-y-2">{list.map((t: any, i: number) => row(t, label === "서식(별지)" ? "서식" : "별표", i))}</ul>
                   </div>
@@ -276,7 +276,18 @@ function LawDetail({ law, onBack }: { law: any; onBack: () => void }) {
                   )}
                   <div className="mt-2 border-t border-slate-100 pt-1.5">
                     <button onClick={() => scrollTo("sec-addenda")} className="block w-full py-0.5 text-left font-semibold text-slate-700 hover:text-brand-700">부칙</button>
-                    <button onClick={() => scrollTo("sec-tables")} className="block w-full py-0.5 text-left font-semibold text-slate-700 hover:text-brand-700">별표·서식</button>
+                    {(() => {
+                      const tb = body.tables || [];
+                      const hasByul = tb.some((t: any) => (t.gubun || "별표") === "별표");
+                      const hasSeo = tb.some((t: any) => (t.gubun || "") === "서식");
+                      return (
+                        <>
+                          <button onClick={() => scrollTo("sec-tables")} className="block w-full py-0.5 text-left font-semibold text-slate-700 hover:text-brand-700">별표·서식</button>
+                          {hasByul && <button onClick={() => scrollTo("sec-별표")} className="block w-full py-0.5 pl-3 text-left text-xs text-slate-500 hover:text-brand-700">└ 별표</button>}
+                          {hasSeo && <button onClick={() => scrollTo("sec-서식")} className="block w-full py-0.5 pl-3 text-left text-xs text-slate-500 hover:text-brand-700">└ 서식(별지)</button>}
+                        </>
+                      );
+                    })()}
                   </div>
                 </>
               )}

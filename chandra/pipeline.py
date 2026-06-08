@@ -593,6 +593,34 @@ def _resolve_food_type(by_type: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _amendment_check(by_type: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    """품목제조보고사항 변경보고서(시행규칙 제46조) 안내·교차검증.
+
+    변경보고서면 '변경 후(최신) 기준' 안내를 띄우고, 자가품질성적서 발급일이 변경보고일보다
+    이전이면 성적서가 변경 전 기준일 수 있어 검토필요로 격상한다.
+    """
+    rep = by_type.get(DOC_PRODUCT_REPORT) or {}
+    if not rep.get("is_amendment"):
+        return None
+    from chandra.validity import parse_date
+
+    changes = rep.get("amendment_changes") or []
+    items = [
+        "📝 품목제조보고사항 변경보고서 — '변경 후(최신)' 내용이 기준입니다(시행규칙 제46조). "
+        f"변경 항목: {', '.join(changes) if changes else '확인 필요'}. "
+        "자가품질성적서·표시사항·상세페이지가 최신 기준과 일치하는지 확인하세요."
+    ]
+    cert = by_type.get(DOC_SELF_QUALITY) or {}
+    adate, idate = parse_date(rep.get("amendment_date")), parse_date(cert.get("issue_date"))
+    stale = bool(adate and idate and idate < adate)
+    if stale:
+        items.append(
+            f"⚠ 성적서 발급일({idate.isoformat()})이 변경보고일({adate.isoformat()})보다 이전 — "
+            "성적서가 변경 전 원재료·기준으로 발급됐을 수 있어 재확인 필요"
+        )
+    return {"step": "변경보고서", "verdict": "검토필요" if stale else "안내", "items": items, "stale": stale}
+
+
 def _basic_info(by_type: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     """제품 기본 정보(제품명·식품유형·영업소 등)를 문서 우선순위로 집계.
 
@@ -680,6 +708,12 @@ def run_quality_review(
                              "items": ["동일 업체·주소 서류로 묶였으나 식별정보가 다릅니다 — 같은 제품의 "
                                        "서류 오류이거나 다른 제품 서류가 섞였을 수 있어 확인 필요"] + items})
             if overall == "적합":
+                overall = "검토필요"
+        # 변경보고서(시행규칙 제46조) 안내 + 성적서 변경 전 발급 여부 검토
+        amend = _amendment_check(by_type)
+        if amend:
+            flags.insert(0, {"step": amend["step"], "verdict": amend["verdict"], "items": amend["items"]})
+            if amend["stale"] and overall == "적합":
                 overall = "검토필요"
         products.append({
             "product": cluster.get("name") or (by_type.get(DOC_LABEL, {}) or {}).get("product_name"),

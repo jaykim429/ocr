@@ -357,7 +357,7 @@ def classify_and_extract(
         h = hashlib.md5(Path(path).read_bytes()).hexdigest()
         # 프롬프트 버전: 1차 추출 + 재추출(refind) 프롬프트/대상필드를 모두 반영해
         # 프롬프트가 바뀌면 캐시가 자동 무효화되도록 한다.
-        pv_src = _EXTRACTION_SYSTEM + _REFIND_SYSTEM + repr(sorted(_REFIND_FIELDS))
+        pv_src = _EXTRACTION_SYSTEM + _REFIND_SYSTEM + repr(sorted(_REFIND_FIELDS)) + "v2-textlayer-priority"
         pv = hashlib.md5(pv_src.encode("utf-8")).hexdigest()[:8]
         _EXT_CACHE.mkdir(parents=True, exist_ok=True)
         cache_file = _EXT_CACHE / f"{h}_{int(tile)}{tile_grid[0]}{tile_grid[1]}_{int(use_ocr)}_{max_pages}_{pv}.json"
@@ -421,10 +421,20 @@ def classify_and_extract(
             " 이어지는 추가 이미지들은 같은 문서의 '부분 확대(타일)'입니다. "
             "전체에서 묻혀 작게 보이는 글씨(제조사명/소재지/영양성분 등)는 확대 타일로 정확히 읽으세요."
         )
-    if ocr_text:
+    if ocr_text and kordoc_md:
+        # 텍스트 레이어(문서 원본 텍스트)는 글자 단위로 가장 정확하다 → 제품명 등 고유명사는
+        # 이 텍스트를 그대로 따르고(예: '뼈를'을 이미지 보고 '뼈클'로 바꾸지 말 것), 이미지는
+        # 표 구조·체크박스·숫자 확인용으로만 쓴다.
+        user_text += (
+            "\n\n아래는 이 문서에 내장된 '문서 원본 텍스트'입니다(가장 정확). 제품명·업체명·기관명·"
+            "주소 등 모든 한글 표기는 이 텍스트를 글자 그대로 따르고, 이미지를 보고 임의로 글자를 "
+            "바꾸지 마세요(특히 받침 '를/클/름' 등 혼동 주의). 표 구조·숫자·체크박스만 이미지로 확인.\n\n"
+            + ocr_text
+        )
+    elif ocr_text:
         user_text += (
             "\n\n아래는 전용 한글 OCR 엔진이 추출한 텍스트입니다. "
-            "한글 명칭(업체명/기관명/주소 등)의 표기는 이 OCR 텍스트를 우선 기준으로 삼고, "
+            "한글 명칭(제품명/업체명/기관명/주소 등)의 표기는 이 OCR 텍스트를 우선 기준으로 삼고, "
             "표 구조·숫자·결과값은 이미지로 확인해 보정하세요.\n\n" + ocr_text
         )
     try:

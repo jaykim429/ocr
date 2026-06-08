@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import re
 import threading
+from functools import lru_cache
 from typing import Any
 
 from openai import OpenAI
@@ -25,6 +26,16 @@ from chandra.settings import settings
 _VLM_SEMAPHORE = threading.BoundedSemaphore(
     max(1, int(getattr(settings, "REVIEW_MAX_CONCURRENCY", 12)))
 )
+
+
+@lru_cache(maxsize=8)
+def _client(api_key: str, base_url: str, timeout: float) -> OpenAI:
+    """OpenAI 클라이언트를 (키·엔드포인트·타임아웃)별로 재사용한다.
+
+    호출마다 새 OpenAI() 를 만들면 httpx 커넥션 풀을 매번 새로 열어 비효율적이다.
+    클라이언트는 스레드세이프하므로 세마포어 동시성 범위에서 공유해도 안전하다.
+    """
+    return OpenAI(api_key=api_key, base_url=base_url, timeout=timeout)
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -64,10 +75,10 @@ def judge_json(
 
     호출 실패 시 예외를 전파하므로, 호출부에서 try/except 로 '판정불가' 처리한다.
     """
-    client = OpenAI(
-        api_key=api_key or settings.REVIEW_API_KEY,
-        base_url=api_base or settings.REVIEW_API_BASE,
-        timeout=timeout_seconds or settings.REVIEW_TIMEOUT_SECONDS,
+    client = _client(
+        api_key or settings.REVIEW_API_KEY,
+        api_base or settings.REVIEW_API_BASE,
+        timeout_seconds or settings.REVIEW_TIMEOUT_SECONDS,
     )
 
     content: list[dict[str, Any]] = [{"type": "text", "text": user_text}]

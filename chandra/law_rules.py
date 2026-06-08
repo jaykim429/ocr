@@ -96,7 +96,6 @@ def applicable_rules(food_type: str | None, label_text: str) -> list[dict]:
     """제품 속성에 해당하는 고시 근거 목록 [{name, snippet}] 을 반환한다."""
     ft = food_type or ""
     t = label_text or ""
-    tl = t.lower()
     out = []
     for r in RULES:
         try:
@@ -110,14 +109,19 @@ def applicable_rules(food_type: str | None, label_text: str) -> list[dict]:
     return out
 
 
-def grounding_block(food_type: str | None, label_text: str) -> str:
-    """적용 고시 근거를 label_check Gemma 프롬프트에 주입할 텍스트 블록(없으면 빈 문자열)."""
-    rules = applicable_rules(food_type, label_text)
+def rules_to_block(rules: list[dict]) -> str:
+    """이미 선별된 규칙 목록을 프롬프트 주입용 텍스트 블록으로(없으면 빈 문자열).
+
+    호출부가 applicable_rules 를 이미 호출했다면 그 결과를 그대로 넘겨 중복 평가를 피한다.
+    """
     if not rules:
         return ""
-    lines = [
-        "\n\n[적용 법령·고시 근거 — 아래 기준으로 추가 점검하고, 해당 항목을 items 에 포함하세요]",
-    ]
+    lines = ["\n\n[적용 법령·고시 근거 — 아래 기준으로 추가 점검하고, 해당 항목을 items 에 포함하세요]"]
     for r in rules:
         lines.append(f"· {r['snippet']}")
     return "\n".join(lines)
+
+
+def grounding_block(food_type: str | None, label_text: str) -> str:
+    """적용 고시 근거를 label_check Gemma 프롬프트에 주입할 텍스트 블록(없으면 빈 문자열)."""
+    return rules_to_block(applicable_rules(food_type, label_text))

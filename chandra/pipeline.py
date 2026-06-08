@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from chandra.extraction import (
+    DOC_EVIDENCE,
     DOC_LABEL,
     DOC_NUTRITION_CERT,
     DOC_PRODUCT_REPORT,
@@ -621,6 +622,34 @@ def _amendment_check(by_type: dict[str, dict[str, Any]]) -> dict[str, Any] | Non
     return {"step": "변경보고서", "verdict": "검토필요" if stale else "안내", "items": items, "stale": stale}
 
 
+def _cross_check(labels: list[dict[str, Any]], provided_patents: set[str]) -> dict[str, Any] | None:
+    """표시 특허번호 ↔ 제출 근거자료(특허등록증) 교차대조.
+
+    라벨에 표기된 특허번호가 함께 제출된 근거자료(특허등록증)의 번호와 일치하면 '제출·일치 확인',
+    근거자료가 없거나 번호가 다르면 '미제출/불일치 — 확인 필요'로 보고한다.
+    (소비기한·보관·내용량은 형식 차이로 과다알람 위험이 커 자동 플래그 대신 기본정보 표에 노출.)
+    """
+    import re
+
+    issues: list[str] = []
+    oks: list[str] = []
+    lab_patents = {re.sub(r"\D", "", str(l.get("patent_no"))) for l in labels if l.get("patent_no")}
+    for p in {x for x in lab_patents if x}:
+        if any(p == pp or p in pp or pp in p for pp in provided_patents):
+            oks.append(f"표시 특허번호({p}) 근거자료(특허등록증) 제출·일치 확인됨")
+        else:
+            issues.append(f"표시 특허번호({p}) 근거자료(특허등록증) 미제출 또는 번호 불일치 — 확인 필요")
+
+    if not issues and not oks:
+        return None
+    return {
+        "step": "교차대조",
+        "verdict": "검토필요" if issues else "안내",
+        "items": issues + [f"✅ {o}" for o in oks],
+        "has_issue": bool(issues),
+    }
+
+
 def _basic_info(by_type: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     """제품 기본 정보(제품명·식품유형·영업소 등)를 문서 우선순위로 집계.
 
@@ -695,6 +724,15 @@ def run_quality_review(
         nested = [_extract_one(f) for f in files]
     extractions = [e for sub in nested for e in sub]
 
+    # 제출된 근거자료(특허등록증 등)의 특허번호 — 라벨 표시 특허와 교차대조(유닛 전체 공유)
+    import re as _re
+    provided_patents = {
+        _re.sub(r"\D", "", str(e.get("patent_no")))
+        for e in extractions
+        if e.get("doc_type") == DOC_EVIDENCE and e.get("patent_no")
+    }
+    provided_patents = {p for p in provided_patents if p}
+
     clusters = _group_by_product(extractions)
     products: list[dict[str, Any]] = []
     for idx, cluster in enumerate(clusters, 1):
@@ -717,6 +755,13 @@ def run_quality_review(
         if amend:
             flags.insert(0, {"step": amend["step"], "verdict": amend["verdict"], "items": amend["items"]})
             if amend["stale"] and overall == "적합":
+                overall = "검토필요"
+        # 교차대조: 표시 특허번호 ↔ 제출 근거자료(특허등록증)
+        prod_labels = [d for d in cluster["docs"] if d.get("doc_type") == DOC_LABEL]
+        cross = _cross_check(prod_labels, provided_patents)
+        if cross:
+            flags.insert(0, {"step": cross["step"], "verdict": cross["verdict"], "items": cross["items"]})
+            if cross["has_issue"] and overall == "적합":
                 overall = "검토필요"
         products.append({
             "product": cluster.get("name") or (by_type.get(DOC_LABEL, {}) or {}).get("product_name"),

@@ -251,6 +251,17 @@ def test_evaluate_absence(result, verdict):
     assert evaluate_absence(AbsenceCriteria(), result)[0] == verdict
 
 
+def test_cross_check_patent():
+    """표시 특허번호 ↔ 제출 근거자료(특허등록증) 교차대조."""
+    from chandra.pipeline import _cross_check
+
+    ok = _cross_check([{"patent_no": "특허 1017597790000호"}], {"1017597790000"})
+    assert ok["verdict"] == "안내" and ok["has_issue"] is False
+    miss = _cross_check([{"patent_no": "1017597790000"}], set())
+    assert miss["verdict"] == "검토필요" and miss["has_issue"] is True
+    assert _cross_check([{}], set()) is None  # 특허 표기 없으면 플래그 없음
+
+
 def test_verify_agency_category_guard_on_tel():
     """전화번호 접미가 우연히 일치해도 분야(식품/축산물)가 다르면 매칭하지 않는다."""
     from datetime import date

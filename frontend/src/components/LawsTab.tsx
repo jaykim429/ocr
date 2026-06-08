@@ -24,10 +24,17 @@ export default function LawsTab() {
 
   useEffect(() => { api.getLaws().then((d) => { setItems(d.items || []); setNote(d.note || ""); }); }, []);
 
-  const filtered = useMemo(
-    () => items.filter((l) => l.kind === kind && (!q || l.name.replace(/\s/g, "").includes(q.replace(/\s/g, "")))),
-    [items, kind, q]
-  );
+  const filtered = useMemo(() => {
+    const seen = new Set<string>();  // 같은 (종류+법령명) 중복 항목 제거(방어적)
+    return items.filter((l) => {
+      if (l.kind !== kind) return false;
+      if (q && !l.name.replace(/\s/g, "").includes(q.replace(/\s/g, ""))) return false;
+      const k = `${l.kind}:${l.name}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [items, kind, q]);
 
   if (sel) return <LawDetail law={sel} onBack={() => setSel(null)} />;
 
@@ -66,9 +73,9 @@ export default function LawsTab() {
 
       {/* 목록 */}
       <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-sm">
-        {filtered.map((law, i) => (
+        {filtered.map((law) => (
           <button
-            key={law.seq || law.name || i}
+            key={`${law.kind}:${law.name}`}
             onClick={() => law.seq && setSel(law)}
             className={`block w-full px-5 py-4 text-left ${law.seq ? "hover:bg-slate-50" : "cursor-default opacity-70"}`}
           >

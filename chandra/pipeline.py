@@ -636,6 +636,9 @@ def _basic_info(by_type: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
         "품목제조보고번호": ("manufacture_report_no", [DOC_PRODUCT_REPORT, DOC_SELF_QUALITY]),
         "소재지": ("address", [DOC_PRODUCT_REPORT, DOC_LABEL, DOC_SELF_QUALITY]),
         "대표자": ("representative", [DOC_PRODUCT_REPORT]),
+        "소비기한": ("shelf_life", [DOC_PRODUCT_REPORT, DOC_LABEL]),
+        "보관방법": ("storage_method", [DOC_PRODUCT_REPORT, DOC_LABEL]),
+        "포장단위/내용량": ("package_unit", [DOC_PRODUCT_REPORT, DOC_LABEL]),
     }
     ft = _resolve_food_type(by_type)
     rows = []

@@ -594,6 +594,9 @@ _SELF_QUALITY_JUDGE_SYSTEM = """당신은 식품 품질검토 전문가입니다
       대장균(군)이 검사·적합으로 기재돼 있으면 세균수가 없어도 '세균수 누락'으로 단정하지 말 것
       (반대도 동일). 규격 항목의 적용조건('살균제품에 한함' 등)이나 제품 특성(비살균·가열섭취)이
       확인되면 그에 맞는 항목만 의무로 본다.
+    · ★규격 항목 기준에 '(멸균제품은 제외한다)' 같은 단서가 붙어 있고, evidence '품목특성.살균구분'이
+      '멸균'이면 그 항목(예: 대장균군)은 검사 의무가 없으므로 '누락'으로 보지 말 것. '살균구분'이
+      '멸균'·'살균'이면 해당 면제·완화 단서를 그대로 적용한다(예: 멸균 가공두유의 대장균군 면제).
 - ★evidence 의 '축산물가공품_여부'=true 이면(양념육·햄·소시지·유가공품·알가공품 등) 규격·자가품질
   검사항목은 「축산물의 가공기준 및 성분규격」및 축산물 위생관리법 기준이 적용된다. 이때:
     · 식품공전(I0930)에 규격이 없는 것이 정상이므로 '규격 못 찾음'을 흠으로 보지 말 것.
@@ -730,6 +733,7 @@ def build_self_quality_evidence(
     today: _date | None = None,
     labels: list[dict[str, Any]] | None = None,
     ingredients: list[str] | None = None,
+    product_traits: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Gemma 판정을 위한 구조화 근거(facts)를 만든다. 판정값은 포함하지 않는다."""
     food_type = certificate.food_type or (
@@ -797,6 +801,7 @@ def build_self_quality_evidence(
             "성적서에 기재된 검사항목 외 미생물 등을 임의로 '필수 누락'으로 단정하지 말 것."
             if is_livestock else None
         ),
+        "품목특성": product_traits or None,  # 품목제조보고서 '품목의 특성'(살균구분·영양표시의무 등)
         "식품공전_규격_식품안전나라": {
             "출처": "식품안전나라 식품공전 OpenAPI(I0930)",
             "항목수": len(live_spec),
@@ -844,6 +849,7 @@ def review_self_quality_gemma(
     today: _date | None = None,
     labels: list[dict[str, Any]] | None = None,
     ingredients: list[str] | None = None,
+    product_traits: dict[str, Any] | None = None,
     **gemma_opts: Any,
 ) -> dict[str, Any]:
     """3단계 검토를 Gemma 판정으로 수행한다.
@@ -852,7 +858,7 @@ def review_self_quality_gemma(
     """
     evidence = build_self_quality_evidence(
         certificate, manufacture=manufacture, standard=standard, today=today,
-        labels=labels, ingredients=ingredients,
+        labels=labels, ingredients=ingredients, product_traits=product_traits,
     )
     user_text = (
         "다음 근거(식품공전 규격, 자가품질검사성적서 결과, 교차대조, 유효기간)를 바탕으로 "

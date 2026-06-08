@@ -302,8 +302,14 @@ def _merge_complementary_clusters(clusters: list[dict[str, Any]]) -> list[dict[s
         nms = {d.get("product_name") for d in (tgt["docs"] + c["docs"]) if d.get("product_name")}
         if len(rns) > 1:
             mismatch["품목제조보고번호"] = sorted(rns)
+        # 제품명은 OCR 변이(예: '뼈를'↔'뼈클'↔'뼈름')로 서로 달라 보일 뿐인 경우가 많다.
+        # 이름들이 서로 충분히 유사하면(OCR 차이 수준) 불일치로 띄우지 않고, 명백히 다른 이름이
+        # 섞였을 때만 기록한다(가장 동떨어진 한 쌍의 유사도가 낮을 때).
         if len(nms) > 1:
-            mismatch["제품명"] = sorted(nms)
+            nlist = sorted(nms)
+            min_sim = min(ratio(collapse(a), collapse(b)) for i, a in enumerate(nlist) for b in nlist[i + 1:])
+            if min_sim < 0.6:
+                mismatch["제품명"] = nlist
         tgt["docs"] = tgt["docs"] + c["docs"]
         tgt["report_nos"] = set(tgt.get("report_nos") or set()) | set(c.get("report_nos") or set())
         if not tgt.get("key") and c.get("key"):
@@ -380,7 +386,12 @@ def _run_steps_for_product(
                 for x in (d or {}).get("ingredients") or []:
                     if x and x not in ing:
                         ing.append(x)
-            return review_self_quality_gemma(cert, manufacture=mfr, today=today, labels=label_list, ingredients=ing)
+            # 품목특성(살균구분·영양표시의무 등) — 멸균제품 대장균군 면제 등 판정에 사용
+            traits = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("product_traits") or None
+            return review_self_quality_gemma(
+                cert, manufacture=mfr, today=today, labels=label_list,
+                ingredients=ing, product_traits=traits,
+            )
         return {"status": "건너뜀 (자가품질검사성적서 없음)"}
 
     def _step4() -> dict[str, Any]:

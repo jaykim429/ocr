@@ -78,10 +78,24 @@ def _num(value: Any) -> float | None:
     return float(m.group(0).replace(",", "")) if m else None
 
 
+def _report_no_from_ocr(ocr: str | None) -> str | None:
+    """OCR 원문에서 품목제조보고번호(보통 '품목(제조)보고/신고번호' 뒤 10~16자리)를 회수.
+
+    Gemma 가 숫자 식별자를 놓치는 경우를 보완. 그룹핑·교차대조의 핵심 키라 신뢰도 높은
+    OCR 숫자열로 폴백한다. 발견 못 하면 None.
+    """
+    import re
+
+    if not ocr:
+        return None
+    m = re.search(r"품목\s*(?:제조)?\s*(?:보고|신고)\s*번호\D{0,6}(\d{10,16})", ocr)
+    return m.group(1) if m else None
+
+
 def _to_manufacture(ext: dict[str, Any] | None) -> ManufactureReport | None:
     if not ext:
         return None
-    report_no = ext.get("manufacture_report_no")
+    report_no = ext.get("manufacture_report_no") or _report_no_from_ocr(ext.get("_ocr_text"))
     license_no = ext.get("license_no")
     # 영업등록번호 = 품목제조보고번호 앞 11자리 (보고번호 = 영업등록번호 + 품목순번)
     if not license_no and report_no and len(str(report_no)) >= 11:
@@ -137,7 +151,7 @@ def _to_certificate(ext: dict[str, Any] | None) -> QualityCertificate | None:
     return QualityCertificate(
         product_name=ext.get("product_name"),
         food_type=ext.get("food_type"),
-        manufacture_report_no=ext.get("manufacture_report_no"),
+        manufacture_report_no=ext.get("manufacture_report_no") or _report_no_from_ocr(ext.get("_ocr_text")),
         test_agency=ext.get("test_agency"),
         test_agency_designation_no=ext.get("test_agency_designation_no"),
         test_agency_tel=ext.get("test_agency_tel"),
@@ -346,6 +360,21 @@ def _merge_complementary_clusters(clusters: list[dict[str, Any]]) -> list[dict[s
     return out
 
 
+def _official_address(by_type: dict[str, Any], permit_docs: list[dict[str, Any]] | None) -> str | None:
+    """공식 소재지: 품목제조보고서 주소 우선, 없으면 영업등록증/공장등록증 주소로 보완.
+
+    1단계(license_check)와 4단계(label_check)가 동일 기준 주소를 쓰도록 단일화한다.
+    (과거 4단계는 존재하지 않는 ManufactureReport.address 를 참조해 결측 시 크래시했음.)
+    """
+    addr = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("address")
+    if addr:
+        return addr
+    for p in (permit_docs or []):
+        if p.get("doc_type") in (DOC_LICENSE, DOC_FACTORY_REG) and p.get("address"):
+            return p.get("address")
+    return None
+
+
 def _run_steps_for_product(
     docs: list[dict[str, Any]], today: date | None,
     permit_docs: list[dict[str, Any]] | None = None,
@@ -461,8 +490,11 @@ def _run_steps_for_product(
         if not label_ext:
             return {"status": "건너뜀 (표시사항 없음)"}
         ft = _resolve_food_type(by_type).get("value")
-        official_addr = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("address") or (mfr.address if mfr else None)
-        res = review_label_disclosures(label_ext, food_type=ft, official_address=official_addr)
+        official_addr = _official_address(by_type, permit_docs)
+        official_ocr = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("_ocr_text") or next(
+            (p.get("_ocr_text") for p in (permit_docs or []) if p.get("_ocr_text")), None)
+        res = review_label_disclosures(label_ext, food_type=ft, official_address=official_addr,
+                                       official_ocr=official_ocr)
 
         # 표시사항 주소가 공식(품목제조보고서) 주소와 다르면 자동 '적합' 통과 금지 — 반드시 검토 표시.
         addr_issues = [d for lab in labels
@@ -501,7 +533,7 @@ def _run_step1(by_type: dict[str, Any], mfr: Any, labels: list[dict[str, Any]],
     if not (mfr or label_ext or permit_docs):
         return {"status": "건너뜀 (품목제조보고서/표시사항 없음)"}
 
-    ref_address = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("address")
+    ref_address = _official_address(by_type, permit_docs)  # 4단계와 동일 기준(보고서+permit 보완)
     ref_name = mfr.business_name if mfr else None
 
     # 표시사항별로 이미지 비전 검증(저해상 라벨도 기준값 존재여부는 정확)
@@ -539,8 +571,10 @@ def _run_step1(by_type: dict[str, Any], mfr: Any, labels: list[dict[str, Any]],
     license_no = (mfr.license_no if mfr else None) or next(
         (p.get("license_no") for p in permit_docs if p.get("doc_type") == DOC_LICENSE and p.get("license_no")), None)
     biz_name = ref_name or next((p.get("business_name") for p in permit_docs if p.get("business_name")), None)
-    ref_address = ref_address or next(
-        (p.get("address") for p in permit_docs if p.get("doc_type") in (DOC_LICENSE, DOC_FACTORY_REG) and p.get("address")), None)
+    # ref_address 는 위에서 _official_address(보고서+permit 보완)로 이미 해소됨.
+    # 고유명사(상호·주소) 권위 기준용 OCR 원문: 보고서 우선, 없으면 등록증류.
+    report_ocr = (by_type.get(DOC_PRODUCT_REPORT) or {}).get("_ocr_text") or next(
+        (p.get("_ocr_text") for p in permit_docs if p.get("_ocr_text")), None)
 
     lic_input = LicenseCheckInput(
         business_name=biz_name,
@@ -552,6 +586,7 @@ def _run_step1(by_type: dict[str, Any], mfr: Any, labels: list[dict[str, Any]],
         label_verification=label_infos[0]["verification"] if label_infos else None,
         labels=label_infos,
         permit_docs=permit_summary,
+        report_ocr=report_ocr,
     )
     return check_license(lic_input).to_dict()
 
@@ -596,6 +631,16 @@ def collect_flags(steps: dict[str, Any]) -> list[dict[str, Any]]:
                  for it in v4.get("items", []) if it.get("verdict") != "적합"]
         items += [f"누락 표시항목: {m}" for m in v4.get("missing_required_items", [])]
         flags.append({"step": "4. 표시사항", "verdict": v4.get("overall_verdict"), "items": items})
+
+    # L2 중복표출 제거: 표시사항 소재지 적합성은 4단계가 이미지+OCR 권위로 판정한다. 4단계가
+    # 소재지/주소 이슈를 이미 표출하면 1단계의 동일 주소 사유는 중복이라 빼고(1단계의 다른
+    # 사유는 유지) 빈 1단계 플래그는 제거한다(overall 판정엔 영향 없음 — 하이라이트만 정리).
+    _addr_kw = ("소재지", "주소")
+    if any(any(k in i for k in _addr_kw) for f in flags if f["step"].startswith("4") for i in f["items"]):
+        for f in flags:
+            if f["step"].startswith("1"):
+                f["items"] = [i for i in f["items"] if not any(k in i for k in _addr_kw)]
+        flags = [f for f in flags if f["items"] or not f["step"].startswith("1")]
 
     return flags
 

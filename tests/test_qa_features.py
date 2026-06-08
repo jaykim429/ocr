@@ -537,3 +537,41 @@ def test_issue_date_prefers_issuance_over_completion():
     assert _issue_date_from_ocr(ocr) == "2025-03-20"
     # 발급/발행 라벨이 없으면 검사완료일을 차순위로 사용
     assert _issue_date_from_ocr("검사완료일 2025-10-31 접수 2025-10-28") == "2025-10-31"
+
+
+# ---------------------------------------------------------------------------
+# 클러스터2: 공식주소 단일화(L1) / 보고번호 OCR 폴백(A4) / 주소 중복표출 제거(L2)
+# ---------------------------------------------------------------------------
+def test_official_address_unified_with_permit_fallback():
+    from chandra.pipeline import _official_address
+    from chandra.extraction import DOC_PRODUCT_REPORT, DOC_LICENSE
+
+    # 보고서 주소 우선
+    assert _official_address({DOC_PRODUCT_REPORT: {"address": "경기도 여주시 가남읍"}}, None) == "경기도 여주시 가남읍"
+    # 보고서 주소 결측 → 영업등록증 주소로 보완(과거 mfr.address 크래시 케이스)
+    assert _official_address({}, [{"doc_type": DOC_LICENSE, "address": "서울시 강남구"}]) == "서울시 강남구"
+    assert _official_address({}, None) is None
+
+
+def test_report_no_from_ocr():
+    from chandra.pipeline import _report_no_from_ocr
+
+    assert _report_no_from_ocr("품목제조신고번호 20070375129311 / 식품유형") == "20070375129311"
+    assert _report_no_from_ocr("품목보고번호: 1234567890123") == "1234567890123"
+    assert _report_no_from_ocr("관련 번호 없음") is None
+
+
+def test_collect_flags_dedup_address_across_step1_4():
+    from chandra.pipeline import collect_flags
+
+    steps = {
+        "step1_license": {"verdict": {"overall_verdict": "검토필요",
+                                      "reasons": ["소재지 표시 확인 필요", "대표자 정보 확인"]}},
+        "step4_label": {"verdict": {"overall_verdict": "검토필요",
+                                    "items": [{"name": "생산자 소재지 표시", "verdict": "검토필요", "reason": "가남읍 누락"}]}},
+    }
+    flags = collect_flags(steps)
+    s1 = next(f for f in flags if f["step"].startswith("1"))
+    # 1단계의 주소 사유는 4단계와 중복이라 제거, 다른 사유는 유지
+    assert "대표자 정보 확인" in s1["items"]
+    assert not any("소재지" in i or "주소" in i for i in s1["items"])

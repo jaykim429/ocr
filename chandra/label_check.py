@@ -76,6 +76,7 @@ def review_label_disclosures(
     label: dict[str, Any] | None,
     food_type: str | None = None,
     official_address: str | None = None,
+    official_ocr: str | None = None,
     **gemma_opts: Any,
 ) -> dict[str, Any]:
     """표시사항 의무 표시항목 충족 여부를 Gemma 로 판정한다.
@@ -106,6 +107,13 @@ def review_label_disclosures(
         "다만 라벨 글자가 또렷하게 읽혀 명백히 다른 주소인 경우에 한해 그 사실을 적시할 수 있습니다."
         if official_address else ""
     )
+    if official_ocr and official_address:
+        # 공식 소재지 추출값이 보고서 작은 글씨를 오독했을 수 있으므로, 보고서 OCR 원문을
+        # 권위 기준으로 함께 제공한다(추출 주소와 OCR이 다르면 OCR 신뢰 — 거짓 불일치 방지).
+        addr_check += (
+            "\n[공식 소재지 OCR 원문(권위 — 추출 주소와 다르면 이 원문을 신뢰)]\n"
+            + official_ocr[:2000]
+        )
     # 감시목록 고시 → 자동연결: 제품 속성(원재료·포장재·인증마크·식품유형)에 해당하는
     # 표시의무 요지만 골라 '적용 법령 근거'로 주입한다(판정은 Gemma 수행).
     from chandra.law_rules import applicable_rules, grounding_block

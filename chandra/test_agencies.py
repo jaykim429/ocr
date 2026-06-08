@@ -165,6 +165,8 @@ def verify_agency(
             if not atel or len(atel) < 9:
                 continue
             if ntel == atel or ntel[-10:] == atel[-10:] or ntel[-9:] == atel[-9:]:
+                if want_cat and ag.category and ag.category != want_cat:
+                    continue  # 분야(식품/축산물)가 다르면 전화 접미 우연일치로 보고 건너뜀
                 return _mk(
                     True, ag, "tel",
                     None if not ndesig else _norm_designation(ag.designation_no) == ndesig,
@@ -187,6 +189,8 @@ def verify_agency(
     if nname:
         for ag in agencies:
             keys = [ag.name, *ag.aliases]
+            if want_cat and ag.category and ag.category != want_cat:
+                continue  # 분야가 다른 기관은 이름이 비슷해도 제외
             for key in keys:
                 nk = _norm(key)
                 if nk and (nk == nname or nk in nname or nname in nk):

@@ -303,11 +303,18 @@ def evaluate_absence(crit: AbsenceCriteria, results_text: str) -> tuple[str, str
     text = (results_text or "").strip()
     if not text:
         return "판정불가", "결과 없음"
-    positive = any(
-        kw in text for kw in ("검출", "양성", "초과", "부적합")
-    ) and not any(kw in text for kw in ("불검출", "미검출"))
-    # 주의: 단순 "0"을 음성으로 보면 "0.5 검출" 같은 양성 결과를 불검출로 오판하므로 제외한다.
-    negative = any(kw in text for kw in ("불검출", "미검출", "음성", "n.d", "N.D"))
+    low = text.lower()
+    # 음성(불검출) 표현. '검출한계/정량한계 미만(이하)'는 사실상 불검출이다.
+    negative = any(kw in low for kw in ("불검출", "미검출", "음성", "n.d", "검출되지", "검출 안", "검출안"))
+    if ("검출한계" in text or "정량한계" in text) and ("미만" in text or "이하" in text):
+        negative = True
+    # 양성 신호. 단, 위 음성표현이나 '없음'(예: '초과 항목 없음')·'한계' 문맥은 양성에서 제외.
+    # 주의: 단순 "0"을 음성으로 보면 "0.5 검출" 같은 양성 결과를 불검출로 오판하므로 "0"은 제외했다.
+    has_pos = any(kw in text for kw in ("검출", "양성", "초과", "부적합"))
+    positive = (
+        has_pos and not negative and "없음" not in text
+        and "검출한계" not in text and "정량한계" not in text
+    )
     if negative and not positive:
         return "적합", f"기준 {crit.describe()} | 결과 {text}"
     if positive:

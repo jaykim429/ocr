@@ -272,20 +272,27 @@ def _merge_complementary_clusters(clusters: list[dict[str, Any]]) -> list[dict[s
     def addr_close(a: set[str], b: set[str]) -> bool:
         return any(x == y or (min(len(x), len(y)) >= 12 and _edit_distance(x, y) <= 2) for x in a for y in b)
 
-    def should_merge(a, b) -> bool:
+    def merge_score(a, b) -> float | None:
+        """병합해도 되면 점수(높을수록 잘 맞음), 아니면 None."""
         if dtypes(a) & dtypes(b):  # 핵심 안전장치: 문서종류가 겹치면 서로 다른 제품으로 본다
-            return False
+            return None
         if not addr_close(addrs(a), addrs(b)):  # 주소(공장)가 같아야 함
-            return False
+            return None
         ra, rb = report_nos(a), report_nos(b)
-        rn_close = any(_edit_distance(x, y) <= 1 for x in ra for y in rb) if (ra and rb) else False
-        nm_close = any(ratio(x, y) >= 0.5 for x in names(a) for y in names(b)) if (names(a) and names(b)) else False
-        return rn_close or nm_close
+        rn_dist = min((_edit_distance(x, y) for x in ra for y in rb), default=99) if (ra and rb) else 99
+        nm_sim = max((ratio(x, y) for x in names(a) for y in names(b)), default=0.0) if (names(a) and names(b)) else 0.0
+        # 보고번호 OCR 근접(편집거리≤1)이 주신호. 제품명만으로 합칠 땐 매우 높은 유사도(≥0.85)를 요구
+        # 한다(같은 공장의 다른 제품을 느슨한 이름 유사도로 오병합하지 않도록).
+        if rn_dist <= 1 or nm_sim >= 0.85:
+            return (10 - rn_dist) + nm_sim  # 보고번호 거리 작을수록, 이름 유사할수록 우선
+        return None
 
     clusters = [dict(c) for c in clusters]
     out: list[dict[str, Any]] = []
     for c in clusters:
-        tgt = next((o for o in out if should_merge(o, c)), None)
+        # 여러 후보 중 '가장 잘 맞는' 클러스터로 병합(보고번호 거리·이름 유사도 기준).
+        scored = [(s, o) for o in out if (s := merge_score(o, c)) is not None]
+        tgt = max(scored, key=lambda t: t[0])[1] if scored else None
         if tgt is None:
             out.append(c)
             continue

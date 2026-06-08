@@ -236,14 +236,29 @@ def test_self_tested_requires_exact_name(monkeypatch):
     assert ev["검사기관_제조사동일_자체검사"] is False
 
 
-def test_evaluate_absence_bare_number_not_negative():
+@pytest.mark.parametrize("result,verdict", [
+    ("0.5", "판정불가"),          # 숫자만 → '0' 오판 방지
+    ("불검출", "적합"),
+    ("검출", "부적합"),
+    ("0.5 검출", "부적합"),
+    ("검출한계 미만", "적합"),     # 검출한계 미만 = 사실상 불검출(부적합 오판 방지)
+    ("정량한계 미만", "적합"),
+    ("초과 항목 없음", "판정불가"),  # '없음' 문맥은 양성 아님
+])
+def test_evaluate_absence(result, verdict):
     from chandra.self_quality import AbsenceCriteria, evaluate_absence
 
-    crit = AbsenceCriteria()
-    # 결과가 키워드 없이 숫자만('0.5')이면 '0' 때문에 음성으로 오판하지 말고 판정불가
-    verdict, _ = evaluate_absence(crit, "0.5")
-    assert verdict == "판정불가"
-    assert evaluate_absence(crit, "불검출")[0] == "적합"
+    assert evaluate_absence(AbsenceCriteria(), result)[0] == verdict
+
+
+def test_verify_agency_category_guard_on_tel():
+    """전화번호 접미가 우연히 일치해도 분야(식품/축산물)가 다르면 매칭하지 않는다."""
+    from datetime import date
+    from chandra.test_agencies import TestAgency, verify_agency
+
+    db = [TestAgency(name="식품기관", designation_no="제50호", category="식품", tel="031-111-2222", valid_until="27.1.1")]
+    v = verify_agency("축산검사소", "축산물 제50호", tel="031-111-2222", db=db, today=date(2026, 6, 8))
+    assert v.found is False
 
 
 @pytest.mark.parametrize("q,addr,ok", [

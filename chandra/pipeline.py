@@ -354,25 +354,56 @@ def _run_steps_for_product(
         return _run_step1(by_type, mfr, labels)
 
     def _step2() -> dict[str, Any]:
-        from chandra.nutrition import nutrition_reference
+        from chandra.nutrition import convert_to_label_basis, nutrition_reference
+        from chandra.validity import check_validity
 
         label_nutri = _nutrition_map(label_ext)
         measured_nutri = _nutrition_map(nutri_ext)
         basis = (label_ext or {}).get("nutrition_basis")
+        measured_basis = (nutri_ext or {}).get("nutrition_basis")
         ft = _resolve_food_type(by_type).get("value")
-        # 식품유형 대비 영양성분 한 줄 참고 코멘트(판정 아님)
         ref_note = nutrition_reference(ft, label_nutri, basis=basis) if label_nutri else None
+
+        # 영양성분성적서 발급기관 공인 여부·발급일·검사목적(참고용 알람)
+        cert_info = None
+        if nutri_ext:
+            from chandra.test_agencies import verify_agency
+
+            ag = verify_agency(
+                nutri_ext.get("test_agency"), nutri_ext.get("test_agency_designation_no"),
+                tel=nutri_ext.get("test_agency_tel"), address=nutri_ext.get("test_agency_address"),
+                today=today,
+            )
+            issue = nutri_ext.get("issue_date")
+            purpose = nutri_ext.get("test_purpose")
+            cert_info = {
+                "검사기관_검증": ag.to_dict(),
+                "발급일": issue,
+                "유효기간": check_validity(issue, today=today, valid_months=6, label="영양성분성적서").to_dict() if issue else None,
+                "검사목적": purpose,
+                "검사목적_참고용": bool(purpose and ("참고" in purpose)),
+            }
+
         if label_nutri and measured_nutri:
-            out = compare_nutrition(label_nutri, measured_nutri).to_dict()
+            converted, conv_note = convert_to_label_basis(measured_nutri, measured_basis, basis)
+            out = compare_nutrition(label_nutri, converted).to_dict()
             out["표시기준단위"] = basis
+            out["성적서기준단위"] = measured_basis
+            out["단위환산"] = conv_note
+            out["성적서_실측원본"] = measured_nutri
             out["식품유형_참고"] = ref_note
+            out["성적서_검증"] = cert_info
+            if conv_note is None and measured_basis != basis:
+                out.setdefault("reasons", []).insert(0, "⚠ 표시/성적서 기준단위를 환산할 수 없어 직접 비교함 — 기준단위 확인 필요")
             return out
         return {
             "status": "영양성분성적서 미제출 또는 표시사항 영양성분 미추출 - 비교 로직 준비됨",
             "표시기준단위": basis,
+            "성적서기준단위": measured_basis,
             "표시사항_영양성분": label_nutri,
             "성적서_실측": measured_nutri,
             "식품유형_참고": ref_note,
+            "성적서_검증": cert_info,
         }
 
     def _step3() -> dict[str, Any]:

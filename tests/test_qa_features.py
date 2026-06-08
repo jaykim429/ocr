@@ -251,6 +251,23 @@ def test_evaluate_absence(result, verdict):
     assert evaluate_absence(AbsenceCriteria(), result)[0] == verdict
 
 
+def test_nutrition_unit_conversion_and_tolerance():
+    """성적서 100g당 → 표시 제공량(180g)당 환산 후 별지1 허용오차(120%/80%) 적용."""
+    from chandra.nutrition import compare_nutrition, convert_to_label_basis, parse_basis
+
+    assert parse_basis("100g당") == (100.0, "g")
+    assert parse_basis("총 내용량(180mL)당") == (180.0, "ml")
+    measured = {"열량": 100.0, "단백질": 7.0}  # 성적서 100g당
+    conv, note = convert_to_label_basis(measured, "100g당", "총 내용량(180g)당")
+    assert round(conv["열량"], 1) == 180.0 and round(conv["단백질"], 1) == 12.6  # ×1.8
+    assert "×1.8" in note
+    # 표시 열량 100(상한): 측정 환산 180이 120%(=120) 초과 → 부적합
+    r = compare_nutrition({"열량": 100.0}, {"열량": 180.0})
+    assert r.overall_verdict == "부적합"
+    # 표시 단백질 15(하한): 측정 12.6이 80%(=12) 이상 → 적합
+    assert compare_nutrition({"단백질": 15.0}, {"단백질": 12.6}).overall_verdict == "적합"
+
+
 def test_cross_check_patent():
     """표시 특허번호 ↔ 제출 근거자료(특허등록증) 교차대조."""
     from chandra.pipeline import _cross_check

@@ -271,7 +271,19 @@ function StepPanel({ title, step, foodType }: { title: string; step: any; foodTy
         );
       })()}
       {step?.["표시기준단위"] && (
-        <p className="text-[15px] text-slate-600">📐 표시 기준단위: <b>{step["표시기준단위"]}</b></p>
+        <p className="text-[15px] text-slate-600">📐 표시 기준단위: <b>{step["표시기준단위"]}</b>{step["성적서기준단위"] ? ` · 성적서 기준: ${step["성적서기준단위"]}` : ""}</p>
+      )}
+      {step?.["단위환산"] && (
+        <p className="text-[15px] text-slate-600">🔄 단위 환산: {step["단위환산"]}</p>
+      )}
+      {step?.["성적서_검증"] && (
+        <div className="mt-1.5 rounded-lg bg-slate-50 px-3 py-2 text-[15px] text-slate-700 ring-1 ring-inset ring-slate-200">
+          <b>영양성분성적서</b>:
+          {" "}검사기관 {step["성적서_검증"]["검사기관_검증"]?.found ? "✅ 공인 확인" : "⚠ 미확인"}
+          {step["성적서_검증"]["발급일"] ? ` · 발급일 ${step["성적서_검증"]["발급일"]}` : ""}
+          {step["성적서_검증"]["검사목적"] ? ` · 목적 ${step["성적서_검증"]["검사목적"]}` : ""}
+          {step["성적서_검증"]["검사목적_참고용"] ? " (⚠ 참고용 — 공식 검증용 아님)" : ""}
+        </div>
       )}
       {step?.["표시사항_영양성분"] && (
         <p className="text-[15px] text-slate-500">

@@ -13,10 +13,56 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from chandra.text_match import collapse as _norm
+
+
+def parse_basis(text: str | None) -> tuple[float, str] | None:
+    """영양성분 '기준단위'를 (수량, 단위)로 파싱.
+
+    '100g당'→(100,'g'), '총 내용량(180mL)당'→(180,'ml'), '1회 제공량(30g)당'→(30,'g').
+    수량·단위를 못 찾으면 None(예: '단위내용량당').
+    """
+    if not text:
+        return None
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(kg|g|ml|mL|㎖|ℓ|L|l)", str(text))
+    if not m:
+        return None
+    amt = float(m.group(1))
+    unit = m.group(2).lower()
+    if unit == "kg":
+        amt, unit = amt * 1000, "g"
+    elif unit in ("ℓ", "l"):
+        amt, unit = amt * 1000, "ml"
+    elif unit in ("㎖",):
+        unit = "ml"
+    return (amt, unit)
+
+
+def convert_to_label_basis(
+    measured: dict[str, float | None], measured_basis: str | None, label_basis: str | None
+) -> tuple[dict[str, float | None], str | None]:
+    """성적서 실측값(measured_basis 기준)을 표시(label_basis) 기준으로 환산한다.
+
+    예: 성적서 100g당 → 표시 총 내용량 180g당 = 측정값 × 1.8.
+    두 기준단위를 모두 파싱해야 환산하며, 불가하면 원본 그대로 + note=None.
+    g↔mL 단위가 다르면 밀도 1 로 근사 환산하고 주석을 단다.
+    """
+    mb, lb = parse_basis(measured_basis), parse_basis(label_basis)
+    if not mb or not lb:
+        return measured, None
+    (m_amt, m_unit), (l_amt, l_unit) = mb, lb
+    if not m_amt:
+        return measured, None
+    factor = l_amt / m_amt
+    converted = {k: (v * factor if isinstance(v, (int, float)) else v) for k, v in measured.items()}
+    note = f"성적서 {m_amt:g}{m_unit}당 → 표시 {l_amt:g}{l_unit}당 환산(×{factor:g})"
+    if m_unit != l_unit:
+        note += f" [단위 {m_unit}↔{l_unit}는 밀도 1로 근사]"
+    return converted, note
 
 
 # 허용오차 관리 구분

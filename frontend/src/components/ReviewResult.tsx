@@ -193,18 +193,27 @@ function Highlight({ flags }: { flags: any[] }) {
         ✅ 모든 단계 적합 — 별도로 확인할 항목이 없습니다.
       </div>
     );
-  const hasFail = flags.some((f) => f.verdict === "부적합");
-  return (
-    <div className={`rounded-lg px-4 py-3 text-base ring-1 ring-inset ${hasFail ? "bg-rose-50 text-rose-800 ring-rose-600/20" : "bg-amber-50 text-amber-900 ring-amber-600/20"}`}>
-      <div className="mb-1.5 font-bold">{hasFail ? "🔴 부적합 / 확인 필요 항목" : "🟡 담당자 확인이 필요한 항목"}</div>
-      {flags.map((f, i) => (
-        <div key={i} className="mb-1">
-          <span className="font-semibold">[{f.step}] {f.verdict}</span>
-          <ul className="ml-5 list-disc">
-            {f.items.map((it: string, j: number) => <li key={j}>{it}</li>)}
-          </ul>
+  // 부적합(차단)과 검토필요(확인)를 색·순서로 분리 — 부적합 사유를 먼저, 명확히.
+  const fail = flags.filter((f) => f.verdict === "부적합");
+  const check = flags.filter((f) => f.verdict !== "부적합");
+  const Group = ({ list, title, cls }: { list: any[]; title: string; cls: string }) =>
+    list.length ? (
+      <div className={`rounded-lg px-4 py-3 text-[15px] ring-1 ring-inset ${cls}`}>
+        <div className="mb-1.5 font-bold">{title}</div>
+        <div className="space-y-1.5">
+          {list.map((f, i) => (
+            <div key={i} className="flex flex-wrap gap-x-2">
+              <span className="shrink-0 font-semibold">[{f.step}]</span>
+              <span>{f.items.join(" · ")}</span>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
+    ) : null;
+  return (
+    <div className="space-y-2">
+      <Group list={fail} title="🔴 부적합 — 입점 기준 미달(반드시 조치)" cls="bg-rose-50 text-rose-800 ring-rose-600/25" />
+      <Group list={check} title="🟡 확인 필요 — 담당자 검토 권장" cls="bg-amber-50 text-amber-900 ring-amber-600/20" />
     </div>
   );
 }
@@ -221,7 +230,7 @@ function vbar(v?: string) {
 function VerdictCell({ v }: { v?: string }) {
   const c = v === "적합" ? "text-emerald-600" : v === "부적합" ? "text-rose-600" : "text-amber-600";
   if (!v) return <span className="text-slate-300">—</span>;
-  return <span className={`inline-flex items-center gap-1.5 text-[13px] font-semibold ${c}`}><Dot value={v} />{v}</span>;
+  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-[13px] font-semibold ${c}`}><Dot value={v} />{v}</span>;
 }
 function TableWrap({ head, children }: { head: ReactNode; children: ReactNode }) {
   return (
@@ -266,7 +275,7 @@ function LicenseTable({ ev, v }: { ev: any; v: any }) {
     { f: "대표자", d: doc["대표자"], l: null, note: null, b: null, ok: null },
   ];
   return (
-    <TableWrap head={<tr><th className={TH}>대조 항목</th><th className={TH}>인허가서류</th><th className={TH}>표시사항</th><th className={TH}>안전나라 DB</th><th className={`${TH} w-20`}>판정</th></tr>}>
+    <TableWrap head={<tr><th className={TH}>대조 항목</th><th className={TH}>인허가서류</th><th className={TH}>표시사항</th><th className={TH}>안전나라 DB</th><th className={`${TH} w-24`}>판정</th></tr>}>
       {rows.map((r, i) => (
         <tr key={i} className={`border-l-2 ${r.ok === false ? vbar("검토필요") : "border-transparent"} hover:bg-slate-50/50`}>
           <td className={`${TD} font-medium text-slate-500`}>{r.f}</td>
@@ -283,7 +292,7 @@ function LicenseTable({ ev, v }: { ev: any; v: any }) {
 // 2단계: 영양성분 비교표 (표시값 ↔ 성적서 실측 ↔ 비율 ↔ 판정)
 function NutritionTable({ comparisons }: { comparisons: any[] }) {
   return (
-    <TableWrap head={<tr><th className={TH}>영양성분</th><th className={TH}>표시값</th><th className={TH}>성적서 실측</th><th className={`${TH} w-24`}>측정/표시</th><th className={`${TH} w-20`}>판정</th></tr>}>
+    <TableWrap head={<tr><th className={TH}>영양성분</th><th className={TH}>표시값</th><th className={TH}>성적서 실측</th><th className={`${TH} w-24`}>측정/표시</th><th className={`${TH} w-24`}>판정</th></tr>}>
       {comparisons.map((c, i) => (
         <Fragment key={i}>
           <tr className={`border-l-2 ${c.verdict === "적합" ? "border-transparent" : vbar(c.verdict)} hover:bg-slate-50/50`}>
@@ -309,7 +318,7 @@ function SelfQualityTable({ ev, v }: { ev: any; v: any }) {
   const norm = (s: any) => String(s || "").replace(/\s/g, "");
   const find = (arr: any[], n: string) => arr.find((x) => norm(x.name) === norm(n)) || {};
   return (
-    <TableWrap head={<tr><th className={TH}>시험항목</th><th className={TH}>식품공전 규격</th><th className={TH}>적용조건</th><th className={TH}>성적서 결과</th><th className={`${TH} w-20`}>판정</th></tr>}>
+    <TableWrap head={<tr><th className={TH}>시험항목</th><th className={TH}>식품공전 규격</th><th className={TH}>적용조건</th><th className={TH}>성적서 결과</th><th className={`${TH} w-24`}>판정</th></tr>}>
       {items.map((it: any, i: number) => {
         const sp = find(specs, it.name); const ts = find(tests, it.name);
         const result = Array.isArray(ts["결과"]) ? ts["결과"].join(", ") : dash(ts["결과"]);
@@ -418,10 +427,6 @@ function StepPanel({ title, step, foodType }: { title: string; step: any; foodTy
                     : `${yn(ev["검사기관_검증"].found, "공인 확인됨", "미확인")} — ${ev["검사기관_검증"].detail}`} />
               )}
             </div>
-          )}
-
-          {(v?.missing_required_items || []).length > 0 && (
-            <p className="text-[13px] text-amber-700">⚠ 누락 필수항목: {(v.missing_required_items).join(", ")}</p>
           )}
 
           {(v?.reasons || []).length > 0 && (

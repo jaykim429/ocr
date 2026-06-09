@@ -644,36 +644,33 @@ def collect_flags(steps: dict[str, Any]) -> list[dict[str, Any]]:
     if v1 and v1.get("overall_verdict") != "적합":
         flags.append({"step": "1. 인허가", "verdict": v1.get("overall_verdict"), "items": list(v1.get("reasons", []))})
 
+    # 하이라이트는 '한눈에 무엇이 문제인가' 요약 — 항목 이름 위주로 간결히 싣고, 구체 근거·
+    # 수치는 단계별 표가 보여준다(중복 제거). 표가 없는 1단계 사유·맥락 항목만 문장으로 둔다.
     s2 = steps.get("step2_nutrition", {})
     if "comparisons" in s2:
-        bad = [f"{c['name']}: {c['detail']}" for c in s2["comparisons"] if c.get("verdict") != "적합"]
+        bad = [c["name"] for c in s2["comparisons"] if c.get("verdict") != "적합"]
         if bad:
             flags.append({"step": "2. 영양성분", "verdict": s2.get("overall_verdict"), "items": bad})
 
     s3 = steps.get("step3_self_quality", {})
     v3 = s3.get("verdict")
     if v3 and v3.get("overall_verdict") != "적합":
-        items = [f"{it.get('name')}: {it.get('verdict')} — {it.get('reason')}"
-                 for it in v3.get("items", []) if it.get("verdict") != "적합"]
-        items += [f"누락 필수항목: {m}" for m in v3.get("missing_required_items", [])]
+        items = [it.get("name") for it in v3.get("items", []) if it.get("verdict") != "적합"]
         ev3 = s3.get("evidence", {})
         ag = (ev3.get("검사기관_검증") or {})
         # 영업자 직접 자가품질검사(검사기관=제조사)는 공인 위탁목록 미존재가 흠이 아님
         if ag and not ag.get("found") and not ev3.get("검사기관_제조사동일_자체검사"):
-            items.append(f"검사기관 미확인: {ag.get('detail')}")
+            items.append("검사기관 미확인")
         if ag.get("designation_expired"):
-            items.append(f"검사기관 지정 만료: {ag.get('detail')}")
-        val = (ev3.get("유효기간") or {})
-        if val.get("valid") is False:
-            items.append(f"유효기간 만료: {val.get('detail')}")
+            items.append("검사기관 지정 만료")
+        if (ev3.get("유효기간") or {}).get("valid") is False:
+            items.append("유효기간 만료")
         flags.append({"step": "3. 자가품질", "verdict": v3.get("overall_verdict"), "items": items})
 
     s4 = steps.get("step4_label", {})
     v4 = s4.get("verdict")
     if v4 and v4.get("overall_verdict") != "적합":
-        items = [f"{it.get('name')}: {it.get('reason')}"
-                 for it in v4.get("items", []) if it.get("verdict") != "적합"]
-        items += [f"누락 표시항목: {m}" for m in v4.get("missing_required_items", [])]
+        items = [it.get("name") for it in v4.get("items", []) if it.get("verdict") != "적합"]
         flags.append({"step": "4. 표시사항", "verdict": v4.get("overall_verdict"), "items": items})
 
     # L2 중복표출 제거: 표시사항 소재지 적합성은 4단계가 이미지+OCR 권위로 판정한다. 4단계가

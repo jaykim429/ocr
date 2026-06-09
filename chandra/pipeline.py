@@ -347,10 +347,16 @@ def _merge_complementary_clusters(clusters: list[dict[str, Any]]) -> list[dict[s
         # 이름들이 서로 충분히 유사하면(OCR 차이 수준) 불일치로 띄우지 않고, 명백히 다른 이름이
         # 섞였을 때만 기록한다(가장 동떨어진 한 쌍의 유사도가 낮을 때).
         if len(nms) > 1:
-            nlist = sorted(nms)
-            min_sim = min(ratio(collapse(a), collapse(b)) for i, a in enumerate(nlist) for b in nlist[i + 1:])
-            if min_sim < 0.6:
-                mismatch["제품명"] = nlist
+            # 공백만 다른 표기('간장 양념 민물장어구이' ↔ '간장 양념민물장어구이')는 같은 제품명 →
+            # collapse(공백 제거) 기준으로 중복 제거하고 대표 표기 1개만 남긴다.
+            canon: dict[str, str] = {}
+            for n in sorted(nms):
+                canon.setdefault(collapse(n), n)
+            reps = list(canon.values())
+            if len(reps) > 1:
+                min_sim = min(ratio(collapse(a), collapse(b)) for i, a in enumerate(reps) for b in reps[i + 1:])
+                if min_sim < 0.6:
+                    mismatch["제품명"] = reps
         tgt["docs"] = tgt["docs"] + c["docs"]
         tgt["report_nos"] = set(tgt.get("report_nos") or set()) | set(c.get("report_nos") or set())
         if not tgt.get("key") and c.get("key"):

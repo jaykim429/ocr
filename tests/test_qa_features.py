@@ -575,3 +575,42 @@ def test_collect_flags_dedup_address_across_step1_4():
     # 1단계의 주소 사유는 4단계와 중복이라 제거, 다른 사유는 유지
     assert "대표자 정보 확인" in s1["items"]
     assert not any("소재지" in i or "주소" in i for i in s1["items"])
+
+
+# ---------------------------------------------------------------------------
+# 제품명: 공백변형 중복제거(불일치 오탐 방지) / OCR '제품명' 앵커 회수(환각 보정)
+# ---------------------------------------------------------------------------
+def test_product_name_mismatch_ignores_spacing_only():
+    """'간장 양념 민물장어구이' ↔ '간장 양념민물장어구이'는 공백만 달라 같은 제품 → 불일치 미기록."""
+    from chandra.pipeline import _group_by_product
+
+    addr = "충남 당진시 송악읍 농장길 336-66"
+    ext = [
+        {"doc_type": DOC_PRODUCT_REPORT, "product_name": "간장 양념 민물장어구이", "manufacture_report_no": "202406940832", "address": addr},
+        {"doc_type": DOC_LABEL, "product_name": "간장 양념민물장어구이", "manufacture_report_no": "202406940832", "address": addr},
+    ]
+    cl = _group_by_product(ext)
+    assert "제품명" not in (cl[0].get("doc_mismatch") or {})
+
+
+def test_product_name_mismatch_lists_distinct_only():
+    """공백변형은 하나로, 내용이 다른 제품명(감탄장어탕)만 별도 표출."""
+    from chandra.pipeline import _group_by_product
+
+    addr = "충남 당진시 송악읍 농장길 336-66"
+    ext = [
+        {"doc_type": DOC_PRODUCT_REPORT, "product_name": "간장 양념 민물장어구이", "manufacture_report_no": "202406940832", "address": addr},
+        {"doc_type": DOC_LABEL, "product_name": "간장 양념민물장어구이", "manufacture_report_no": "202406940832", "address": addr},
+        {"doc_type": DOC_SELF_QUALITY, "product_name": "감탄 민물장어탕", "manufacture_report_no": "202406940831", "address": addr},
+    ]
+    names = (_group_by_product(ext)[0].get("doc_mismatch") or {}).get("제품명") or []
+    assert len([n for n in names if "간장" in n]) == 1  # 공백변형 1개로 축약
+    assert any("감탄" in n for n in names)
+
+
+def test_product_name_from_ocr_anchor():
+    from chandra.extraction import _product_name_from_ocr
+
+    ocr = "제품명 감탄민물장어 양념구이 품목제조신고번호 202406940831 유형 기타 수산물가공품"
+    assert _product_name_from_ocr(ocr) == "감탄민물장어 양념구이"
+    assert _product_name_from_ocr("관련 정보 없음") is None

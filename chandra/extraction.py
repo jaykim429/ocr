@@ -54,6 +54,27 @@ def _supported_by_ocr(value: str | None, ocr_text: str, threshold: float = 0.6) 
     return best_window_ratio(nv, no) >= threshold
 
 
+def _product_name_from_ocr(ocr_text: str | None) -> str | None:
+    """OCR 텍스트의 '제품명' 라벨 뒤 값을 회수한다(Gemma 제품명 환각 보정용).
+
+    구조화 서류(성적서·품목보고서·영양성적서)는 '제품명' 다음에 제품명이 인쇄돼 있어
+    OCR 원문이 Gemma 비전 판독보다 신뢰도가 높다(예: Gemma '감탄 민물장어탕'(환각) ↔
+    OCR '감탄민물장어 양념구이'). 다음 필드 라벨 앞까지를 값으로 본다. 못 찾으면 None.
+    표시사항(라벨)은 디자인 배치라 앵커 회수가 불안정하므로 호출부에서 제외한다.
+    """
+    if not ocr_text:
+        return None
+    m = re.search(
+        r"제\s*품\s*명\s*[:：]?\s*([가-힣A-Za-z0-9()\[\]·\-&. ]+?)"
+        r"(?:\s*(?:품목|식품유형|유형|재질|신고번호|보고번호|내용량|규격|성명|업체|발급|접수|제조국)|$)",
+        ocr_text,
+    )
+    if not m:
+        return None
+    name = re.sub(r"\s{2,}", " ", m.group(1)).strip()
+    return name if 2 <= len(name.replace(" ", "")) <= 40 else None
+
+
 # 환각 검증 대상 고유명사 필드.
 # test_agency 는 제외 — 검사기관 DB(전화/지정번호/이름/퍼지)로 더 견고하게 검증되므로
 # OCR 근거가 약해도 폐기하지 않고 DB 검증에 맡긴다.
@@ -515,6 +536,17 @@ def classify_and_extract(
         result.setdefault("doc_type", DOC_UNKNOWN)
         if result["doc_type"] not in KNOWN_DOC_TYPES:
             result["doc_type"] = DOC_UNKNOWN
+
+        # 제품명 OCR 권위 보정: 구조화 서류(성적서·보고서·영양서)에서 Gemma 제품명이 OCR
+        # '제품명' 앵커값과 내용이 다르면(환각 의심) OCR 값을 채택한다. 단일 제품 문서만.
+        if single and ocr_text and result["doc_type"] in (
+            DOC_PRODUCT_REPORT, DOC_SELF_QUALITY, DOC_NUTRITION_CERT
+        ):
+            ocr_name = _product_name_from_ocr(ocr_text)
+            cur = result.get("product_name")
+            if ocr_name and cur and _norm_ko(ocr_name) != _norm_ko(cur):
+                result["_product_name_gemma"] = cur
+                result["product_name"] = ocr_name
 
         # 누락/오인식 핵심 필드 재추출. 단일 제품은 전체 핵심필드, 병합 PDF 다제품은
         # 그룹핑·판정에 직결되는 필드만(비용 절감) + 제품명 컨텍스트로 교차오염 방지.

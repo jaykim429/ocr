@@ -366,6 +366,44 @@ def _merge_complementary_clusters(clusters: list[dict[str, Any]]) -> list[dict[s
     return out
 
 
+def _reconcile_product_names(docs: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """제품명 표기가 서류마다 다를 때 OCR 원문을 근거로 같은 제품인지 Gemma 가 재판단(하이브리드).
+
+    비전 추출명과 전용 한글 OCR 판독명을 함께 제시해, OCR/표기 변이(간장↔감탄)인지 명백히
+    다른 제품인지 판단한다. 반환 {same_product, canonical, reason} 또는 None(미수행/실패).
+    """
+    from chandra.extraction import _product_name_from_ocr
+    from chandra.gemma_judge import judge_json
+    from chandra.text_match import collapse
+
+    rows = []
+    for d in docs:
+        nm = d.get("product_name")
+        if not nm:
+            continue
+        rows.append({
+            "문서": d.get("doc_type"),
+            "추출_제품명(비전)": nm,
+            "OCR_제품명(한글OCR)": _product_name_from_ocr(d.get("_ocr_text")),
+        })
+    if len({collapse(r["추출_제품명(비전)"]) for r in rows}) <= 1 or not rows:
+        return None  # 표기가 이미 동일(공백 변이) → 재판단 불필요
+    system = (
+        "너는 식품 입점서류의 제품명 표기를 대조하는 전문가다. 같은 제품이 서류마다 비전 추출/OCR "
+        "오인식·띄어쓰기로 다르게 보일 수 있다(예: '간장 양념 민물장어구이' ↔ OCR '감탄 민물장어양념구이'). "
+        "각 서류의 추출명과 한글 OCR 판독명을 종합해, 같은 제품의 표기·판독 변이인지 명백히 다른 제품인지 "
+        "판단하라. 한글 OCR 판독명이 비전 추출명보다 글자 정확도가 높다. 반드시 아래 JSON 만 출력:\n"
+        '{"same_product": true/false, "canonical": "가장 정확한 제품명", "reason": "판단 근거"}'
+    )
+    user = "묶인 서류들의 제품명 표기:\n" + json.dumps(rows, ensure_ascii=False, indent=2)
+    try:
+        r = judge_json(system, user, max_output_tokens=300)
+        r.pop("_raw", None)
+        return r
+    except Exception:  # noqa: BLE001 - 재판단 실패 시 기존 불일치 유지
+        return None
+
+
 def _official_address(by_type: dict[str, Any], permit_docs: list[dict[str, Any]] | None) -> str | None:
     """공식 소재지: 품목제조보고서 주소 우선, 없으면 영업등록증/공장등록증 주소로 보완.
 
@@ -887,6 +925,12 @@ def run_quality_review(
                      .get("영업등록번호_정확매칭") or {}).get("business_name")
         # 동일 업체·주소로 묶였으나 보고번호·제품명이 서류 간 불일치(OCR 오류 또는 다른 제품 서류 혼입)
         mismatch = cluster.get("doc_mismatch")
+        # 제품명 불일치는 OCR/표기 변이일 수 있어 OCR 원문 근거로 Gemma 가 재판단(하이브리드).
+        # 같은 제품으로 판단되면 제품명 사유는 제거(보고번호 등 다른 불일치는 유지).
+        if mismatch and mismatch.get("제품명"):
+            rec = _reconcile_product_names(cluster["docs"])
+            if rec and rec.get("same_product"):
+                mismatch = {k: v for k, v in mismatch.items() if k != "제품명"}
         if mismatch:
             items = [f"{k} 불일치: {' / '.join(map(str, v))}" for k, v in mismatch.items()]
             flags.insert(0, {"step": "서류 일관성", "verdict": "검토필요",

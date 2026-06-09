@@ -31,11 +31,13 @@ class LawRule:
     name: str          # 고시/법령명 (watchlist 등재명과 일치)
     trigger: Callable[[str, str], bool]  # (food_type, label_text) -> 적용 여부
     snippet: str       # 주입할 표시의무 요지 + 점검 포인트
+    basis: str = ""    # 법적 근거(짧은 인용) — 항목별 근거 표시·칩 표출용
 
 
 RULES: list[LawRule] = [
     LawRule(
         name="유전자변형식품등의 표시기준",
+        basis="「유전자변형식품등의 표시기준」제3·5조",
         trigger=lambda ft, t: any(c in t for c in _GMO_CROPS),
         snippet=(
             "「유전자변형식품등의 표시기준」제3·5조: 안전성심사 승인 GMO 농축수산물"
@@ -51,6 +53,7 @@ RULES: list[LawRule] = [
     ),
     LawRule(
         name="분리배출 표시에 관한 지침",
+        basis="「자원의 절약과 재활용촉진에 관한 법률」§14 · 「분리배출 표시에 관한 지침」",
         trigger=lambda ft, t: any(k in t for k in _PACKAGING),
         snippet=(
             "「분리배출 표시에 관한 지침」: 종이팩·유리·금속캔·합성수지(PET/PE/PP 등)·"
@@ -62,6 +65,7 @@ RULES: list[LawRule] = [
     ),
     LawRule(
         name="식품 및 축산물 안전관리인증기준",
+        basis="「식품 및 축산물 안전관리인증기준(HACCP)」",
         trigger=lambda ft, t: any(k in t.lower() for k in ("haccp", "안전관리인증", "위해요소")),
         snippet=(
             "「식품 및 축산물 안전관리인증기준(HACCP)」: HACCP(안전관리인증) 마크·문구는 "
@@ -72,6 +76,7 @@ RULES: list[LawRule] = [
     ),
     LawRule(
         name="부당한 표시·광고행위의 유형 및 기준 지정고시",
+        basis="「부당한 표시·광고행위의 유형 및 기준 지정고시」",
         trigger=lambda ft, t: True,  # 금지표현 점검 — 위반이 있을 때만 Gemma 가 플래그(저노이즈)
         snippet=(
             "「부당한 표시·광고행위의 유형 및 기준 지정고시」: 질병의 예방·치료 효능을 표방하거나 "
@@ -82,6 +87,7 @@ RULES: list[LawRule] = [
     ),
     LawRule(
         name="건강기능식품의 표시기준",
+        basis="「건강기능식품의 표시기준」",
         trigger=lambda ft, t: "건강기능식품" in (ft or ""),
         snippet=(
             "「건강기능식품의 표시기준」: 기능정보, 섭취량·섭취방법·섭취 시 주의사항, "
@@ -105,7 +111,7 @@ def applicable_rules(food_type: str | None, label_text: str) -> list[dict]:
         except Exception:  # noqa: BLE001 - 트리거 오류는 미적용으로 처리
             hit = False
         if hit:
-            out.append({"name": r.name, "snippet": r.snippet})
+            out.append({"name": r.name, "snippet": r.snippet, "basis": r.basis})
     return out
 
 
@@ -116,7 +122,11 @@ def rules_to_block(rules: list[dict]) -> str:
     """
     if not rules:
         return ""
-    lines = ["\n\n[적용 법령·고시 근거 — 아래 기준으로 추가 점검하고, 해당 항목을 items 에 포함하세요]"]
+    lines = [
+        "\n\n[적용 법령·고시 근거 — 아래 기준으로 추가 점검하고, 해당 항목을 items 에 포함하세요. "
+        "이 근거로 새로 추가하는 items 의 reason 에는 해당 법령·고시명을 함께 적으세요"
+        "(예: \"「유전자변형식품등의 표시기준」에 따라 …\").]"
+    ]
     for r in rules:
         lines.append(f"· {r['snippet']}")
     return "\n".join(lines)

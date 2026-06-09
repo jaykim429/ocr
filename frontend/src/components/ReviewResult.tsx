@@ -376,6 +376,18 @@ function StepPanel({ title, step, foodType }: { title: string; step: any; foodTy
         <div className="space-y-3">
           <StepTable title={title} step={step} />
 
+          {/* 적용 법령·고시 근거 칩 (자동연결된 고시) */}
+          {(ev["적용_법령근거"] || []).length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">적용 법령·고시</span>
+              {ev["적용_법령근거"].map((l: any, i: number) => (
+                <span key={i} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600" title={typeof l === "string" ? l : l.name}>
+                  {typeof l === "string" ? l : (l.basis || l.name)}
+                </span>
+              ))}
+            </div>
+          )}
+
           {/* 표에 담기지 않는 단계 신호: 유효기간 · 검사기관(3단계) */}
           {(ev["유효기간"] || ev["검사기관_검증"]) && (
             <div className="space-y-1.5">

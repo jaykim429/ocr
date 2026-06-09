@@ -229,9 +229,11 @@ function TableWrap({ head, children }: { head: ReactNode; children: ReactNode })
 }
 const dash = (x: any) => (x === 0 || x ? x : "—");
 
-// 표에 담기지 않는 단계 신호(유효기간·검사기관)용 절제된 한 줄 정보 박스
-function InfoLine({ ok, icon, label, text }: { ok: boolean; icon: string; label: string; text: string }) {
-  const c = ok ? "bg-emerald-50/60 text-emerald-900 ring-emerald-600/15" : "bg-amber-50/60 text-amber-900 ring-amber-600/15";
+// 표에 담기지 않는 단계 신호(유효기간·검사기관)용 절제된 한 줄 정보 박스(심각도별 색)
+function InfoLine({ level, icon, label, text }: { level: "ok" | "warn" | "bad"; icon: string; label: string; text: string }) {
+  const c = level === "ok" ? "bg-emerald-50/60 text-emerald-900 ring-emerald-600/15"
+    : level === "bad" ? "bg-rose-50/70 text-rose-900 ring-rose-600/25"
+    : "bg-amber-50/60 text-amber-900 ring-amber-600/15";
   return (
     <div className={`flex gap-2 rounded-lg px-3 py-2 text-[13px] ring-1 ring-inset ${c}`}>
       <span className="shrink-0">{icon}</span>
@@ -246,11 +248,16 @@ function LicenseTable({ ev, v }: { ev: any; v: any }) {
   const doc = ev["인허가서류"] || {};
   const lab = ev["표시사항"] || {};
   const labV = ev["표시사항_검증"] || {};
+  // 상호: 영업등록번호로 DB와 동일 영업자 확정(name_match)이면 DB 정식상호를 확정값으로 표시하고
+  // 라벨 OCR 오독(그린피시팜→그린피시잠)은 작은 주석으로 남긴다(투명성 유지, 노이즈 제거).
+  const labName = lab["제조사명"] || labV["name_seen"];
+  const nameCanon = v?.name_match && db.business_name ? db.business_name : labName;
+  const nameNote = v?.name_match && db.business_name && labName && labName !== db.business_name ? `OCR: ${labName}` : null;
   const rows = [
-    { f: "상호(영업자명)", d: doc["영업자명"], l: lab["제조사명"] || labV["name_seen"], b: db.business_name, ok: v?.name_match },
-    { f: "영업등록번호", d: doc["영업등록번호"], l: null, b: db.license_no, ok: v?.exists_in_db },
-    { f: "소재지", d: doc["주소"], l: lab["소재지"] || labV["address_seen"], b: db.address, ok: v?.address_match },
-    { f: "대표자", d: doc["대표자"], l: null, b: db.representative ? "(DB 마스킹)" : null, ok: null },
+    { f: "상호(영업자명)", d: doc["영업자명"], l: nameCanon, note: nameNote, b: db.business_name, ok: v?.name_match },
+    { f: "영업등록번호", d: doc["영업등록번호"], l: null, note: null, b: db.license_no, ok: v?.exists_in_db },
+    { f: "소재지", d: doc["주소"], l: lab["소재지"] || labV["address_seen"], note: null, b: db.address, ok: v?.address_match },
+    { f: "대표자", d: doc["대표자"], l: null, note: null, b: null, ok: null },
   ];
   return (
     <TableWrap head={<tr><th className={TH}>대조 항목</th><th className={TH}>인허가서류</th><th className={TH}>표시사항</th><th className={TH}>안전나라 DB</th><th className={`${TH} w-20`}>판정</th></tr>}>
@@ -258,7 +265,7 @@ function LicenseTable({ ev, v }: { ev: any; v: any }) {
         <tr key={i} className={`border-l-2 ${r.ok === false ? vbar("검토필요") : "border-transparent"} hover:bg-slate-50/50`}>
           <td className={`${TD} font-medium text-slate-500`}>{r.f}</td>
           <td className={`${TD} text-slate-800`}>{dash(r.d)}</td>
-          <td className={`${TD} text-slate-800`}>{dash(r.l)}</td>
+          <td className={`${TD} text-slate-800`}>{dash(r.l)}{r.note && <span className="ml-1 text-[11px] text-slate-400">({r.note})</span>}</td>
           <td className={`${TD} text-slate-800`}>{dash(r.b)}</td>
           <td className={TD}>{r.ok === null ? <span className="text-slate-300">—</span> : <VerdictCell v={r.ok ? "적합" : "검토필요"} />}</td>
         </tr>
@@ -373,11 +380,11 @@ function StepPanel({ title, step, foodType }: { title: string; step: any; foodTy
           {(ev["유효기간"] || ev["검사기관_검증"]) && (
             <div className="space-y-1.5">
               {ev["유효기간"] && (
-                <InfoLine ok={ev["유효기간"].valid === true} icon="📅"
+                <InfoLine level={ev["유효기간"].valid === true ? "ok" : "bad"} icon="📅"
                   label="유효기간" text={ev["유효기간"].detail} />
               )}
               {ev["검사기관_검증"] && (
-                <InfoLine ok={!!(ev["검사기관_검증"].found || ev["검사기관_제조사동일_자체검사"])} icon="🏛"
+                <InfoLine level={(ev["검사기관_검증"].found || ev["검사기관_제조사동일_자체검사"]) ? "ok" : "warn"} icon="🏛"
                   label="검사기관"
                   text={ev["검사기관_제조사동일_자체검사"]
                     ? "영업자 직접 자가품질검사(별표12 제5호) — 적법"

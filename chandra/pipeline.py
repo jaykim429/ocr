@@ -776,11 +776,14 @@ def _cross_check(labels: list[dict[str, Any]], provided_patents: set[str]) -> di
     }
 
 
-def _basic_info(by_type: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+def _basic_info(by_type: dict[str, dict[str, Any]],
+                auth_business_name: str | None = None) -> list[dict[str, Any]]:
     """제품 기본 정보(제품명·식품유형·영업소 등)를 문서 우선순위로 집계.
 
     담당자가 업로드 직후 추출 정확성을 표로 즉시 확인하기 위한 요약.
-    각 항목의 출처 문서를 함께 표기한다.
+    각 항목의 출처 문서를 함께 표기한다. auth_business_name 이 주어지면(영업등록번호가
+    안전나라 DB 와 일치) DB 의 정식 업소명을 영업자(제조원)의 권위값으로 채택한다 —
+    스캔 OCR 오독(그린피시팜→그런피시 등) 대신 DB 표기를 보여준다.
     """
     # 필드별 우선순위 문서
     order = {
@@ -800,6 +803,9 @@ def _basic_info(by_type: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     for label, (key, doc_pref) in order.items():
         if key == "food_type":
             rows.append({"field": label, "value": ft["value"], "source": ft["source"]})
+            continue
+        if key == "business_name" and auth_business_name:
+            rows.append({"field": label, "value": auth_business_name, "source": "안전나라 DB"})
             continue
         value, source = None, None
         for dt in doc_pref:
@@ -870,6 +876,9 @@ def run_quality_review(
         by_type, steps = _run_steps_for_product(cluster["docs"], today, permit_docs=permit_docs)
         overall = _product_overall(steps)
         flags = collect_flags(steps)
+        # 영업등록번호가 안전나라 DB 와 일치하면 DB 정식 업소명을 권위 상호로(OCR 오독 보정).
+        auth_name = ((steps.get("step1_license", {}) or {}).get("evidence", {})
+                     .get("영업등록번호_정확매칭") or {}).get("business_name")
         # 동일 업체·주소로 묶였으나 보고번호·제품명이 서류 간 불일치(OCR 오류 또는 다른 제품 서류 혼입)
         mismatch = cluster.get("doc_mismatch")
         if mismatch:
@@ -894,7 +903,7 @@ def run_quality_review(
                 overall = "검토필요"
         products.append({
             "product": cluster.get("name") or (by_type.get(DOC_LABEL, {}) or {}).get("product_name"),
-            "basic_info": _basic_info(by_type),
+            "basic_info": _basic_info(by_type, auth_business_name=auth_name),
             "food_type_check": _resolve_food_type(by_type),
             "documents_found": list(by_type.keys()),
             "overall": overall,

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import time
 import urllib.parse
 import urllib.request
 from dataclasses import asdict, dataclass
@@ -35,11 +36,21 @@ def _request(service: str, start: int, end: int, cond: str = "") -> dict[str, An
     url = f"{base}/{key}/{service}/json/{start}/{end}"
     if cond:
         url += "/" + cond
-    with urllib.request.urlopen(url, timeout=settings.FOODSAFETY_TIMEOUT_SECONDS) as r:
-        text = r.read().decode("utf-8")
-    if text.lstrip().startswith("<"):
-        raise RuntimeError("API 인증 실패 또는 비정상 응답 (인증키/서비스 권한 확인)")
-    return json.loads(text)
+    # 식품안전나라 API 는 동시·연속 호출 시 간헐적으로 타임아웃/HTML(비정상) 응답을 준다.
+    # 영업등록번호 조회 등 핵심 호출이 일시적 오류로 '없음' 처리되지 않도록 짧게 재시도한다.
+    last: Exception | None = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(url, timeout=settings.FOODSAFETY_TIMEOUT_SECONDS) as r:
+                text = r.read().decode("utf-8")
+            if text.lstrip().startswith("<"):
+                raise RuntimeError("API 인증 실패 또는 비정상 응답 (인증키/서비스 권한 확인)")
+            return json.loads(text)
+        except Exception as exc:  # noqa: BLE001 - 타임아웃/비정상응답 재시도
+            last = exc
+            if attempt < 2:
+                time.sleep(0.8 * (attempt + 1))
+    raise last  # type: ignore[misc]
 
 
 def _rows_to_records(body: dict[str, Any]) -> list[LicenseRecord]:

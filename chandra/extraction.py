@@ -412,7 +412,9 @@ def classify_and_extract(
         h = hashlib.md5(Path(path).read_bytes()).hexdigest()
         # 프롬프트 버전: 1차 추출 + 재추출(refind) 프롬프트/대상필드를 모두 반영해
         # 프롬프트가 바뀌면 캐시가 자동 무효화되도록 한다.
-        pv_src = _EXTRACTION_SYSTEM + _REFIND_SYSTEM + repr(sorted(_REFIND_FIELDS)) + "v2-textlayer-priority"
+        # 버전 토큰에 OCR 엔진 세대를 포함한다. EasyOCR→PaddleOCR 교체는 Gemma 에 주는 그라운딩
+        # 텍스트 품질을 바꾸므로, 옛 EasyOCR 시절 추출 캐시를 무효화해 재추출(고유명사 정확도↑)되게 한다.
+        pv_src = _EXTRACTION_SYSTEM + _REFIND_SYSTEM + repr(sorted(_REFIND_FIELDS)) + "v3-paddleocr-grounding"
         pv = hashlib.md5(pv_src.encode("utf-8")).hexdigest()[:8]
         _EXT_CACHE.mkdir(parents=True, exist_ok=True)
         cache_file = _EXT_CACHE / f"{h}_{int(tile)}{tile_grid[0]}{tile_grid[1]}_{int(use_ocr)}_{max_pages}_{pv}.json"

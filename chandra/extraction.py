@@ -54,6 +54,12 @@ def _supported_by_ocr(value: str | None, ocr_text: str, threshold: float = 0.6) 
     return best_window_ratio(nv, no) >= threshold
 
 
+# 양식 필드 라벨이 제품명으로 새는 오추출(품목제조보고서 등) 차단 — 이들은 제품명이 될 수 없다.
+_FORM_LABEL_RE = re.compile(
+    r"(요청하는|품목제조\s*(보고|신고)|보고\s*번호|식품의?\s*유형|영업\s*등록|영업소|보고인|제조보고사항|성분명)"
+)
+
+
 def _product_name_from_ocr(ocr_text: str | None) -> str | None:
     """OCR 텍스트의 '제품명' 라벨 뒤 값을 회수한다(Gemma 제품명 환각 보정용).
 
@@ -575,6 +581,13 @@ def classify_and_extract(
                     fields=["manufacture_report_no", "business_name", "food_type"],
                     extra=suspect, context=result.get("product_name"), **gemma_opts,
                 )
+
+        # 양식 라벨 누출 가드: 제품명에 '요청하는 품목제조보고번호' 같은 양식 라벨이 새면
+        # 제품명이 아니므로 폐기(그룹핑은 보고번호로, 표시는 다른 서류의 제품명으로 보정).
+        pn = result.get("product_name")
+        if pn and _FORM_LABEL_RE.search(str(pn)):
+            result["_product_name_form_label"] = pn
+            result["product_name"] = _product_name_from_ocr(result.get("_ocr_text")) or None
 
         result["file"] = path
         result["num_pages"] = len(images)

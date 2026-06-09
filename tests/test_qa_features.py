@@ -614,3 +614,14 @@ def test_product_name_from_ocr_anchor():
     ocr = "제품명 감탄민물장어 양념구이 품목제조신고번호 202406940831 유형 기타 수산물가공품"
     assert _product_name_from_ocr(ocr) == "감탄민물장어 양념구이"
     assert _product_name_from_ocr("관련 정보 없음") is None
+
+
+def test_form_label_not_product_name():
+    """품목제조보고서 필드 라벨('요청하는 품목제조보고번호' 등)이 제품명으로 새는 오추출 차단."""
+    from chandra.extraction import _FORM_LABEL_RE
+
+    assert _FORM_LABEL_RE.search("요청하는 품목제조보고")
+    assert _FORM_LABEL_RE.search("품목제조보고번호")
+    assert _FORM_LABEL_RE.search("식품의 유형: null")
+    assert not _FORM_LABEL_RE.search("김소형 원방 맛있는 보양밥")
+    assert not _FORM_LABEL_RE.search("간장 양념 민물장어구이")

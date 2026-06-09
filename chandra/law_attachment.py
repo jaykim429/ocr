@@ -64,10 +64,29 @@ def _demote_headings(md: str) -> str:
     )
 
 
-# 법조문 구조 라인(이것만 제목 유지) — 제N조/제N장·절·편·관/제N./부칙/별표·별지·서식·별첨
-_LAW_STRUCT = re.compile(
-    r"^(?:제\s*\d+\s*(?:조(?:의\s*\d+)?|[편장절관]|\.)|부\s*칙|\[?\s*(?:별표|별지|서식|별첨))"
-)
+# 법조문 구조 라인과 계층. 장/편/절/관·공전섹션(제N.)·부칙 = 상위(##), 조 = 중위(###),
+# 별표·별지·서식 제목 = 중위(###). 항·호·목·본문 문장은 일반 본문(평탄화)으로 둔다.
+_RE_JANG = re.compile(r"^제\s*\d+\s*(?:[편장절관]|\.)")
+_RE_JO = re.compile(r"^제\s*\d+\s*조(?:의\s*\d+)?")
+_RE_BUCHIK = re.compile(r"^부\s*칙")
+# 별표/별지/서식/별첨: '[별표 N]'·'별표 N …' 같은 제목 형태(별표 뒤 숫자)만 제목으로 본다.
+_RE_PYO = re.compile(r"^\[?\s*(?:별표|별지|서식|별첨)\s*제?\s*\d")
+# 단, '별표 8의 개정규정에도…'처럼 별표를 가리키는 본문 문장(별표 N의+한글)은 제외(가지번호 N의M은 허용).
+_RE_PYO_SENT = re.compile(r"^(?:별표|별지|서식|별첨)\s*제?\s*\d+\s*의\s*[가-힣]")
+
+
+def _law_heading_level(text: str) -> str | None:
+    """법조문 구조면 마크다운 헤딩 접두(## / ###)를, 아니면 None(본문)을 돌려준다.
+
+    별표를 인용하는 본문 문장('별표 8의 개정규정에도…')은 제목이 아니라 본문으로 둔다.
+    """
+    if _RE_JANG.match(text) or _RE_BUCHIK.match(text):
+        return "##"
+    if _RE_JO.match(text):
+        return "###"
+    if _RE_PYO.match(text) and not _RE_PYO_SENT.match(text):
+        return "###"
+    return None
 
 
 def _normalize_law_headings(md: str) -> str:
@@ -84,7 +103,8 @@ def _normalize_law_headings(md: str) -> str:
             out.append(line)
             continue
         text = m.group(1).strip()
-        out.append(f"## {text}" if _LAW_STRUCT.match(text) else text)
+        lvl = _law_heading_level(text)
+        out.append(f"{lvl} {text}" if lvl else text)
     return "\n".join(out)
 
 

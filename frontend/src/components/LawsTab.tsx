@@ -198,7 +198,7 @@ function LawDetail({ law, onBack }: { law: any; onBack: () => void }) {
                 </div>
               ) : body.attachments?.length ? (
                 att !== null ? (
-                  <AttachmentBody md={att} />
+                  <AttachmentBody md={att} lawName={law.name} />
                 ) : attErr ? (
                   <div className="rounded-lg border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">
                     <p className="mb-2">본문 변환 실패: {attErr}</p>
@@ -320,30 +320,61 @@ function nodeText(c: any): string {
   if (c?.props?.children) return nodeText(c.props.children);
   return "";
 }
-function attHeadings(md: string): string[] {
-  return Array.from(md.matchAll(/^#\s+(.+)$/gm), (m) => m[1].trim());
-}
-// 파트 제목으로 본문/별표/부칙 구분 (식품공전: (1)~(4) 본문, (5)~(8) 별표, (9) 부칙)
+// 파트/헤딩 제목으로 본문/별표/부칙 구분. '부 칙'(공백 포함)도 부칙으로 인식.
 function attCategory(t: string): "본문" | "별표·서식" | "부칙" {
-  if (/부칙/.test(t)) return "부칙";
+  if (/부\s*칙/.test(t)) return "부칙";
   if (/별표|별지|서식|일람표/.test(t)) return "별표·서식";
   return "본문";
 }
 function attGroups(md: string): { label: string; items: string[] }[] {
-  const heads = attHeadings(md);
   const order = ["본문", "별표·서식", "부칙"] as const;
-  return order
-    .map((label) => ({ label, items: heads.filter((h) => attCategory(h) === label) }))
-    .filter((g) => g.items.length > 0);
+  // 멀티파트(식품공전 등): 의도적 h1 파트헤더를 네비 항목으로.
+  if (/^#\s+\S/m.test(md)) {
+    const heads = Array.from(md.matchAll(/^#\s+(.+)$/gm), (m) => m[1].trim());
+    return order
+      .map((label) => ({ label, items: heads.filter((h) => attCategory(h) === label) }))
+      .filter((g) => g.items.length > 0);
+  }
+  // 단일 고시: ##(장·부칙) / ###(조·별표)를 문서 순서대로 걷는다. 부칙·별표 섹션에 진입한
+  // 뒤의 내부 조문(부칙의 제1조(시행일) 등)은 네비에서 생략해 중복·혼동을 막는다.
+  const groups: Record<string, string[]> = { 본문: [], "별표·서식": [], 부칙: [] };
+  let section: "본문" | "별표·서식" | "부칙" = "본문";
+  for (const line of md.split("\n")) {
+    const m = line.match(/^#{2,3}\s+(.+)$/);
+    if (!m) continue;
+    const t = m[1].trim();
+    const cat = attCategory(t);
+    if (cat === "부칙") { section = "부칙"; groups["부칙"].push(t); continue; }
+    if (cat === "별표·서식") { section = "별표·서식"; groups["별표·서식"].push(t); continue; }
+    if (section === "본문") groups["본문"].push(t);  // 부칙/별표 진입 후 내부 조문은 생략
+  }
+  return order.map((label) => ({ label, items: groups[label] })).filter((g) => g.items.length > 0);
 }
-function AttachmentBody({ md }: { md: string }) {
-  // 파트 헤더(h1)에 id 부여 → 우측 '법령 체계' 네비에서 스크롤 이동
+// 개정내역(고시 호수) 줄: '… 고시 제2015-97호(2015. 12. 22., 제정/개정)'
+const _REVISION_RE = /고시\s*제\s*\d+\s*-\s*\d+\s*호\s*\(.*(제정|개정)/;
+
+function AttachmentBody({ md, lawName }: { md: string; lawName?: string }) {
+  // 헤딩(h1 파트 / h2 장·부칙 / h3 조·별표)에 id 부여 → 우측 '법령 체계' 네비 스크롤 이동.
+  // 본문 단락 중 (1) 고시명과 같은 제목 줄은 페이지 상단 제목과 중복이라 생략,
+  // (2) 개정내역(고시 호수) 줄은 가장 비중 낮은 정보라 작게·우측정렬한다.
+  const nameNorm = (lawName || "").replace(/\s/g, "");
+  const head = (children: any) => attSlug(nodeText(children));
   return (
     <div className="lawdoc">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw]}
-        components={{ h1: ({ children }) => <h1 id={attSlug(nodeText(children))} className="scroll-mt-4">{children}</h1> }}
+        components={{
+          h1: ({ children }) => <h1 id={head(children)} className="scroll-mt-4">{children}</h1>,
+          h2: ({ children }) => <h2 id={head(children)} className="scroll-mt-4">{children}</h2>,
+          h3: ({ children }) => <h3 id={head(children)} className="scroll-mt-4">{children}</h3>,
+          p: ({ children }) => {
+            const t = nodeText(children).trim();
+            if (nameNorm && t.replace(/\s/g, "") === nameNorm) return null;  // 제목 줄 생략
+            if (_REVISION_RE.test(t)) return <p className="text-right text-xs text-slate-400">{children}</p>;
+            return <p>{children}</p>;
+          },
+        }}
       >
         {md}
       </ReactMarkdown>

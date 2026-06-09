@@ -15,7 +15,7 @@ function fmtDate(d?: string) {
   return `${d.slice(0, 4)}. ${d.slice(4, 6)}. ${d.slice(6, 8)}.`;
 }
 
-export default function LawsTab({ openLaw }: { openLaw?: { name: string; kind: string } | null }) {
+export default function LawsTab({ openLaw, onBackToReview }: { openLaw?: { name: string; kind: string } | null; onBackToReview?: () => void }) {
   const [items, setItems] = useState<any[]>([]);
   const [note, setNote] = useState("");
   const [q, setQ] = useState("");
@@ -43,10 +43,19 @@ export default function LawsTab({ openLaw }: { openLaw?: { name: string; kind: s
     });
   }, [items, kind, q]);
 
-  if (sel) return <LawDetail law={sel} onBack={() => setSel(null)} />;
+  // 검토결과 칩에서 넘어온 경우(onBackToReview 제공) 상단에 '검토 결과로 돌아가기' 바를 띄운다.
+  const backBar = onBackToReview ? (
+    <button onClick={onBackToReview}
+      className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50 hover:text-brand-700">
+      ← 검토 결과로 돌아가기
+    </button>
+  ) : null;
+
+  if (sel) return <div>{backBar}<LawDetail law={sel} onBack={() => setSel(null)} /></div>;
 
   return (
     <div>
+      {backBar}
       {/* 헤더 */}
       <div className="mb-5 flex items-end justify-between">
         <div>

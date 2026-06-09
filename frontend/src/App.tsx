@@ -129,7 +129,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
             {tab === "review" && <ReviewTab job={job} setJob={setJob} onLogout={onLogout} onOpenLaw={onOpenLaw} />}
             {tab === "business" && <BusinessTab />}
             {tab === "agencies" && <AgenciesTab />}
-            {tab === "laws" && <LawsTab openLaw={openLaw} />}
+            {tab === "laws" && <LawsTab openLaw={openLaw} onBackToReview={openLaw ? () => { setTab("review"); setOpenLaw(null); } : undefined} />}
           </ErrorBoundary>
         </div>
       </main>

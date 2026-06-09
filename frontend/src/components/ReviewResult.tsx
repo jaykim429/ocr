@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Card, VerdictBadge, Dot } from "../ui";
 import * as api from "../api";
 
@@ -203,6 +203,147 @@ function Highlight({ flags }: { flags: any[] }) {
   );
 }
 
+// ── 결과 표 (절제·고급: 얇은 라인 / 중립 슬레이트 / 판정 점+좌측 액센트) ──
+const THEAD = "bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-400";
+const TH = "px-3.5 py-2 font-semibold";
+const TD = "px-3.5 py-2.5 align-top";
+const NUM = "tabular-nums font-mono text-[13px] text-slate-700";
+
+function vbar(v?: string) {
+  return v === "적합" ? "border-transparent" : v === "부적합" ? "border-rose-300" : "border-amber-300";
+}
+function VerdictCell({ v }: { v?: string }) {
+  const c = v === "적합" ? "text-emerald-600" : v === "부적합" ? "text-rose-600" : "text-amber-600";
+  if (!v) return <span className="text-slate-300">—</span>;
+  return <span className={`inline-flex items-center gap-1.5 text-[13px] font-semibold ${c}`}><Dot value={v} />{v}</span>;
+}
+function TableWrap({ head, children }: { head: ReactNode; children: ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200">
+      <table className="w-full text-left text-[14px]">
+        <thead className={THEAD}>{head}</thead>
+        <tbody className="divide-y divide-slate-100">{children}</tbody>
+      </table>
+    </div>
+  );
+}
+const dash = (x: any) => (x === 0 || x ? x : "—");
+
+// 표에 담기지 않는 단계 신호(유효기간·검사기관)용 절제된 한 줄 정보 박스
+function InfoLine({ ok, icon, label, text }: { ok: boolean; icon: string; label: string; text: string }) {
+  const c = ok ? "bg-emerald-50/60 text-emerald-900 ring-emerald-600/15" : "bg-amber-50/60 text-amber-900 ring-amber-600/15";
+  return (
+    <div className={`flex gap-2 rounded-lg px-3 py-2 text-[13px] ring-1 ring-inset ${c}`}>
+      <span className="shrink-0">{icon}</span>
+      <span><b className="font-semibold">{label}</b> · {text}</span>
+    </div>
+  );
+}
+
+// 1단계: 인허가서류 ↔ 표시사항 ↔ 안전나라 DB 3출처 대조표
+function LicenseTable({ ev, v }: { ev: any; v: any }) {
+  const db = ev["영업등록번호_정확매칭"] || (ev["안전나라_DB_조회결과"] || [])[0] || {};
+  const doc = ev["인허가서류"] || {};
+  const lab = ev["표시사항"] || {};
+  const labV = ev["표시사항_검증"] || {};
+  const rows = [
+    { f: "상호(영업자명)", d: doc["영업자명"], l: lab["제조사명"] || labV["name_seen"], b: db.business_name, ok: v?.name_match },
+    { f: "영업등록번호", d: doc["영업등록번호"], l: null, b: db.license_no, ok: v?.exists_in_db },
+    { f: "소재지", d: doc["주소"], l: lab["소재지"] || labV["address_seen"], b: db.address, ok: v?.address_match },
+    { f: "대표자", d: doc["대표자"], l: null, b: db.representative ? "(DB 마스킹)" : null, ok: null },
+  ];
+  return (
+    <TableWrap head={<tr><th className={TH}>대조 항목</th><th className={TH}>인허가서류</th><th className={TH}>표시사항</th><th className={TH}>안전나라 DB</th><th className={`${TH} w-20`}>판정</th></tr>}>
+      {rows.map((r, i) => (
+        <tr key={i} className={`border-l-2 ${r.ok === false ? vbar("검토필요") : "border-transparent"} hover:bg-slate-50/50`}>
+          <td className={`${TD} font-medium text-slate-500`}>{r.f}</td>
+          <td className={`${TD} text-slate-800`}>{dash(r.d)}</td>
+          <td className={`${TD} text-slate-800`}>{dash(r.l)}</td>
+          <td className={`${TD} text-slate-800`}>{dash(r.b)}</td>
+          <td className={TD}>{r.ok === null ? <span className="text-slate-300">—</span> : <VerdictCell v={r.ok ? "적합" : "검토필요"} />}</td>
+        </tr>
+      ))}
+    </TableWrap>
+  );
+}
+
+// 2단계: 영양성분 비교표 (표시값 ↔ 성적서 실측 ↔ 비율 ↔ 판정)
+function NutritionTable({ comparisons }: { comparisons: any[] }) {
+  return (
+    <TableWrap head={<tr><th className={TH}>영양성분</th><th className={TH}>표시값</th><th className={TH}>성적서 실측</th><th className={`${TH} w-24`}>측정/표시</th><th className={`${TH} w-20`}>판정</th></tr>}>
+      {comparisons.map((c, i) => (
+        <Fragment key={i}>
+          <tr className={`border-l-2 ${c.verdict === "적합" ? "border-transparent" : vbar(c.verdict)} hover:bg-slate-50/50`}>
+            <td className={`${TD} font-medium text-slate-700`}>{c.name}</td>
+            <td className={`${TD} ${NUM}`}>{dash(c.label_value)}{c.label_value != null && c.unit ? c.unit : ""}</td>
+            <td className={`${TD} ${NUM}`}>{dash(c.measured_value)}{c.measured_value != null && c.unit ? c.unit : ""}</td>
+            <td className={`${TD} ${NUM}`}>{c.ratio != null ? `${Math.round(c.ratio * 100)}%` : "—"}</td>
+            <td className={TD}><VerdictCell v={c.verdict} /></td>
+          </tr>
+          {c.detail && c.verdict !== "적합" && <tr className="bg-slate-50/30"><td className="px-3.5 pb-2 pt-0 text-[12px] text-slate-500" colSpan={5}>↳ {c.detail}</td></tr>}
+        </Fragment>
+      ))}
+    </TableWrap>
+  );
+}
+
+// 3단계: 식품공전 규격 ↔ 성적서 결과 대조표 (근거는 하위 들여쓴 행)
+function SelfQualityTable({ ev, v }: { ev: any; v: any }) {
+  const items = Array.isArray(v?.items) ? v.items : [];
+  if (!items.length) return null;
+  const tests = ev["성적서"]?.["시험항목"] || [];
+  const specs = ev["식품공전_규격"]?.["규격항목"] || [];
+  const norm = (s: any) => String(s || "").replace(/\s/g, "");
+  const find = (arr: any[], n: string) => arr.find((x) => norm(x.name) === norm(n)) || {};
+  return (
+    <TableWrap head={<tr><th className={TH}>시험항목</th><th className={TH}>식품공전 규격</th><th className={TH}>적용조건</th><th className={TH}>성적서 결과</th><th className={`${TH} w-20`}>판정</th></tr>}>
+      {items.map((it: any, i: number) => {
+        const sp = find(specs, it.name); const ts = find(tests, it.name);
+        const result = Array.isArray(ts["결과"]) ? ts["결과"].join(", ") : dash(ts["결과"]);
+        return (
+          <Fragment key={i}>
+            <tr className={`border-l-2 ${vbar(it.verdict)} hover:bg-slate-50/50`}>
+              <td className={`${TD} font-medium text-slate-700`}>{it.name}</td>
+              <td className={`${TD} text-slate-600`}>{dash(sp["기준"] || ts["성적서_기준"])}</td>
+              <td className={`${TD} text-[13px] text-slate-500`}>{dash(sp["적용조건"])}</td>
+              <td className={`${TD} ${NUM}`}>{result}</td>
+              <td className={TD}><VerdictCell v={it.verdict} /></td>
+            </tr>
+            {it.reason && <tr className="bg-slate-50/30"><td className="px-3.5 pb-2 pt-0 text-[12px] leading-snug text-slate-500" colSpan={5}>↳ {it.reason}</td></tr>}
+          </Fragment>
+        );
+      })}
+    </TableWrap>
+  );
+}
+
+// 4단계: 의무 표시항목 체크리스트 (항목 ↔ 기재여부 ↔ 근거)
+function LabelTable({ v }: { v: any }) {
+  const items = Array.isArray(v?.items) ? v.items : [];
+  if (!items.length) return null;
+  return (
+    <TableWrap head={<tr><th className={`${TH} w-64`}>의무 표시항목</th><th className={`${TH} w-24`}>기재여부</th><th className={TH}>근거</th></tr>}>
+      {items.map((it: any, i: number) => (
+        <tr key={i} className={`border-l-2 ${vbar(it.verdict)} hover:bg-slate-50/50`}>
+          <td className={`${TD} font-medium text-slate-700`}>{it.name}</td>
+          <td className={TD}><VerdictCell v={it.verdict === "적합" ? "적합" : it.verdict} /></td>
+          <td className={`${TD} text-[13px] text-slate-500`}>{it.reason}</td>
+        </tr>
+      ))}
+    </TableWrap>
+  );
+}
+
+// 단계별 적절한 표를 선택 렌더. 표가 없으면 null(기존 사유 요약만 표시).
+function StepTable({ title, step }: { title: string; step: any }) {
+  const v = step?.verdict; const ev = step?.evidence || {};
+  if (title.startsWith("1") && v && "exists_in_db" in v) return <LicenseTable ev={ev} v={v} />;
+  if (title.startsWith("2") && Array.isArray(v?.comparisons) && v.comparisons.length) return <NutritionTable comparisons={v.comparisons} />;
+  if (title.startsWith("3")) return <SelfQualityTable ev={ev} v={v} />;
+  if (title.startsWith("4")) return <LabelTable v={v} />;
+  return null;
+}
+
 function StepPanel({ title, step, foodType }: { title: string; step: any; foodType?: string }) {
   const [specOpen, setSpecOpen] = useState(false);
   const v = step?.verdict;
@@ -224,52 +365,39 @@ function StepPanel({ title, step, foodType }: { title: string; step: any; foodTy
         </div>
       </div>
 
-      {v && (() => {
-        // 단계 내 항목을 '적합' vs '확인 필요'로 분리해서 보여준다.
-        const good: { key: string; node: ReactNode }[] = [];
-        const check: { key: string; node: ReactNode }[] = [];
-        const push = (ok: boolean, key: string, node: ReactNode) =>
-          (ok ? good : check).push({ key, node });
+      {(v || ev["유효기간"] || ev["검사기관_검증"]) && (
+        <div className="space-y-3">
+          <StepTable title={title} step={step} />
 
-        if ("exists_in_db" in v) {
-          push(!!v.exists_in_db, "db", <span><b>안전나라 DB 존재</b>: {yn(v.exists_in_db, "있음", "없음")}</span>);
-          push(!!v.label_matches_license_doc, "lm", <span><b>표시사항 ↔ 인허가서류 대조</b>: {yn(v.label_matches_license_doc, "일치", "불일치")}</span>);
-        }
-        (Array.isArray(v.items) ? v.items : []).forEach((it: any, i: number) =>
-          push(it.verdict === "적합", `it${i}`, <span><b>{it.name}</b>: {it.reason}</span>));
-        if (ev["검사기관_검증"]) {
-          const f = ev["검사기관_검증"].found || ev["검사기관_제조사동일_자체검사"];
-          push(!!f, "agency",
-            <span><b>검사기관</b>: {ev["검사기관_제조사동일_자체검사"]
-              ? "영업자 직접 자가품질검사(별표12 제5호) — 적법"
-              : `${yn(ev["검사기관_검증"].found, "공인 확인됨", "미확인")} — ${ev["검사기관_검증"].detail}`}</span>);
-        }
-        if (ev["유효기간"]) push(ev["유효기간"].valid === true, "valid", <span>📅 <b>유효기간</b>: {ev["유효기간"].detail}</span>);
-        (Array.isArray(v.comparisons) ? v.comparisons : []).forEach((c: any, i: number) =>
-          push(c.verdict === "적합", `c${i}`, <span><b>{c.name}</b>: {c.detail}</span>));
-
-        const Group = ({ label, color, list }: { label: string; color: string; list: typeof good }) =>
-          list.length ? (
-            <div>
-              <div className={`mb-1 text-sm font-bold ${color}`}>{label}</div>
-              <ul className="space-y-1 text-[15px] text-slate-700">
-                {list.map((x) => <li key={x.key} className="flex gap-2"><Dot value={label.includes("적합") ? "적합" : "검토필요"} /><span>{x.node}</span></li>)}
-              </ul>
+          {/* 표에 담기지 않는 단계 신호: 유효기간 · 검사기관(3단계) */}
+          {(ev["유효기간"] || ev["검사기관_검증"]) && (
+            <div className="space-y-1.5">
+              {ev["유효기간"] && (
+                <InfoLine ok={ev["유효기간"].valid === true} icon="📅"
+                  label="유효기간" text={ev["유효기간"].detail} />
+              )}
+              {ev["검사기관_검증"] && (
+                <InfoLine ok={!!(ev["검사기관_검증"].found || ev["검사기관_제조사동일_자체검사"])} icon="🏛"
+                  label="검사기관"
+                  text={ev["검사기관_제조사동일_자체검사"]
+                    ? "영업자 직접 자가품질검사(별표12 제5호) — 적법"
+                    : `${yn(ev["검사기관_검증"].found, "공인 확인됨", "미확인")} — ${ev["검사기관_검증"].detail}`} />
+              )}
             </div>
-          ) : null;
+          )}
 
-        return (
-          <div className="space-y-2.5">
-            <Group label={`⚠️ 확인 필요 (${check.length})`} color="text-amber-700" list={check} />
-            <Group label={`✅ 적합 확인 (${good.length})`} color="text-emerald-700" list={good} />
-            {(v.reasons || []).length > 0 && (
-              <ul className="mt-1 space-y-1 text-[15px] text-slate-500">
-                {(v.reasons || []).map((r: string, i: number) => <li key={`r${i}`}>· {r}</li>)}
-              </ul>
-            )}
-          </div>
-        );
-      })()}
+          {(v?.missing_required_items || []).length > 0 && (
+            <p className="text-[13px] text-amber-700">⚠ 누락 필수항목: {(v.missing_required_items).join(", ")}</p>
+          )}
+
+          {(v?.reasons || []).length > 0 && (
+            <details className="text-[13px] text-slate-500">
+              <summary className="cursor-pointer select-none text-slate-400 hover:text-slate-600">종합 사유 {v.reasons.length}건 보기</summary>
+              <ul className="ml-4 mt-1 space-y-0.5">{v.reasons.map((r: string, i: number) => <li key={i}>· {r}</li>)}</ul>
+            </details>
+          )}
+        </div>
+      )}
       {step?.["표시기준단위"] && (
         <p className="text-[15px] text-slate-600">📐 표시 기준단위: <b>{step["표시기준단위"]}</b>{step["성적서기준단위"] ? ` · 성적서 기준: ${step["성적서기준단위"]}` : ""}</p>
       )}

@@ -120,7 +120,8 @@ def review_label_disclosures(
 
     law_text = f"{fields}\n{ocr}"
     applied = applicable_rules(fields["식품유형"], law_text)  # 1회 평가 후 재사용
-    evidence["적용_법령근거"] = [{"name": r["name"], "basis": r.get("basis") or r["name"]} for r in applied]
+    # 적용 법령 근거(자동연결 고시) — 프런트 칩 클릭 시 법령 탭에서 본문 열람(kind=admrul 고시).
+    evidence["적용_법령근거"] = [{"name": r["name"], "basis": r.get("basis") or r["name"], "kind": "admrul"} for r in applied]
     user = (
         "다음 표시사항(라벨)을 보고 의무 표시항목 충족 여부를 점검하세요. 라벨 이미지가 있으면 "
         "이미지를 우선 근거로 삼고, OCR 텍스트는 보조로만 활용하세요.\n\n"

@@ -78,6 +78,9 @@ function Shell({ onLogout }: { onLogout: () => void }) {
   const [tab, setTab] = useState("review");
   const [agencies, setAgencies] = useState<any>(null);
   const [job, setJob] = useState<any>(null);
+  // 검토결과 '적용 법령' 칩 → 법령 탭으로 이동해 해당 고시 본문 열람
+  const [openLaw, setOpenLaw] = useState<{ name: string; kind: string } | null>(null);
+  const onOpenLaw = (l: { name: string; kind: string }) => { setOpenLaw({ ...l }); setTab("laws"); };
   // 401(세션 만료)이면 getAgencies 가 throw → 조용히 깨진 화면 대신 로그아웃 처리
   useEffect(() => { api.getAgencies().then(setAgencies).catch(() => onLogout()); }, [onLogout]);
 
@@ -123,10 +126,10 @@ function Shell({ onLogout }: { onLogout: () => void }) {
       <main className="flex-1 overflow-auto">
         <div className="px-10 py-8">
           <ErrorBoundary>
-            {tab === "review" && <ReviewTab job={job} setJob={setJob} onLogout={onLogout} />}
+            {tab === "review" && <ReviewTab job={job} setJob={setJob} onLogout={onLogout} onOpenLaw={onOpenLaw} />}
             {tab === "business" && <BusinessTab />}
             {tab === "agencies" && <AgenciesTab />}
-            {tab === "laws" && <LawsTab />}
+            {tab === "laws" && <LawsTab openLaw={openLaw} />}
           </ErrorBoundary>
         </div>
       </main>
@@ -174,7 +177,7 @@ function ReviewProgress({ job }: { job: any }) {
   );
 }
 
-function ReviewTab({ job, setJob, onLogout }: { job: any; setJob: (j: any) => void; onLogout: () => void }) {
+function ReviewTab({ job, setJob, onLogout, onOpenLaw }: { job: any; setJob: (j: any) => void; onLogout: () => void; onOpenLaw: (l: { name: string; kind: string }) => void }) {
   const [files, setFiles] = useState<File[]>([]);
   const [today, setToday] = useState(new Date().toISOString().slice(0, 10));
   const [err, setErr] = useState("");
@@ -257,7 +260,7 @@ function ReviewTab({ job, setJob, onLogout }: { job: any; setJob: (j: any) => vo
               🖨 PDF로 저장
             </button>
           </div>
-          <ReviewResult report={job.result} />
+          <ReviewResult report={job.result} onOpenLaw={onOpenLaw} />
         </div>
       )}
     </div>

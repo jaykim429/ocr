@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
-import { Fragment, useEffect, useState } from "react";
+import { createContext, Fragment, useContext, useEffect, useState } from "react";
 import { Card, VerdictBadge, Dot } from "../ui";
 import * as api from "../api";
+
+// 적용 법령 칩 클릭 → 법령 탭에서 해당 고시 열람(앱이 핸들러 주입). 깊은 prop 드릴링 방지용 컨텍스트.
+type OpenLaw = (l: { name: string; kind: string }) => void;
+const OpenLawCtx = createContext<OpenLaw | null>(null);
 
 const ORDER: Record<string, number> = { 적합: 1, 검토필요: 2, 부적합: 3 };
 
@@ -32,7 +36,7 @@ function unitOverall(unit: any): string {
   return worstOf((unit.products || []).map((p: any) => p.overall));
 }
 
-export default function ReviewResult({ report }: { report: any }) {
+export default function ReviewResult({ report, onOpenLaw }: { report: any; onOpenLaw?: OpenLaw }) {
   // 신·구 리포트 형태 통일: units 없으면 통째로 한 단위로 감싼다
   const units: any[] = report.units || [{ name: null, ...report }];
   const overall = worstOf(units.map(unitOverall));
@@ -40,6 +44,7 @@ export default function ReviewResult({ report }: { report: any }) {
   const multi = units.length > 1;
 
   return (
+    <OpenLawCtx.Provider value={onOpenLaw || null}>
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xl font-bold text-slate-900">전체 종합</span>
@@ -53,6 +58,7 @@ export default function ReviewResult({ report }: { report: any }) {
         <UnitView key={i} unit={u} index={i} multi={multi} />
       ))}
     </div>
+    </OpenLawCtx.Provider>
   );
 }
 
@@ -353,6 +359,7 @@ function StepTable({ title, step }: { title: string; step: any }) {
 
 function StepPanel({ title, step, foodType }: { title: string; step: any; foodType?: string }) {
   const [specOpen, setSpecOpen] = useState(false);
+  const openLaw = useContext(OpenLawCtx);
   const v = step?.verdict;
   const ev = step?.evidence || {};
   return (
@@ -376,15 +383,23 @@ function StepPanel({ title, step, foodType }: { title: string; step: any; foodTy
         <div className="space-y-3">
           <StepTable title={title} step={step} />
 
-          {/* 적용 법령·고시 근거 칩 (자동연결된 고시) */}
+          {/* 적용 법령·고시 근거 칩 (자동연결된 고시) — 클릭 시 법령 탭에서 본문 열람 */}
           {(ev["적용_법령근거"] || []).length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">적용 법령·고시</span>
-              {ev["적용_법령근거"].map((l: any, i: number) => (
-                <span key={i} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600" title={typeof l === "string" ? l : l.name}>
-                  {typeof l === "string" ? l : (l.basis || l.name)}
-                </span>
-              ))}
+              {ev["적용_법령근거"].map((l: any, i: number) => {
+                const name = typeof l === "string" ? l : l.name;
+                const label = typeof l === "string" ? l : (l.basis || l.name);
+                const kind = (typeof l === "string" ? "admrul" : (l.kind || "admrul"));
+                return openLaw ? (
+                  <button key={i} onClick={() => openLaw({ name, kind })} title={`${name} — 본문 보기`}
+                    className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600 ring-1 ring-inset ring-transparent hover:bg-brand-50 hover:text-brand-700 hover:ring-brand-600/20">
+                    {label} <span className="text-slate-400">↗</span>
+                  </button>
+                ) : (
+                  <span key={i} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600" title={name}>{label}</span>
+                );
+              })}
             </div>
           )}
 

@@ -15,7 +15,7 @@ function fmtDate(d?: string) {
   return `${d.slice(0, 4)}. ${d.slice(4, 6)}. ${d.slice(6, 8)}.`;
 }
 
-export default function LawsTab() {
+export default function LawsTab({ openLaw }: { openLaw?: { name: string; kind: string } | null }) {
   const [items, setItems] = useState<any[]>([]);
   const [note, setNote] = useState("");
   const [q, setQ] = useState("");
@@ -23,6 +23,13 @@ export default function LawsTab() {
   const [sel, setSel] = useState<any>(null);
 
   useEffect(() => { api.getLaws().then((d) => { setItems(d.items || []); setNote(d.note || ""); }); }, []);
+
+  // 검토결과의 '적용 법령' 칩에서 넘어오면 해당 고시를 자동 선택해 본문을 연다.
+  useEffect(() => {
+    if (!openLaw || !items.length) return;
+    const m = items.find((l) => l.kind === openLaw.kind && l.name === openLaw.name && l.seq);
+    if (m) { setKind(openLaw.kind as "law" | "admrul"); setSel(m); }
+  }, [openLaw, items]);
 
   const filtered = useMemo(() => {
     const seen = new Set<string>();  // 같은 (종류+법령명) 중복 항목 제거(방어적)

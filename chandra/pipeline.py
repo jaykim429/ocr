@@ -30,6 +30,7 @@ from chandra.extraction import (
     DOC_SELF_QUALITY,
     DOC_UNKNOWN,
     PERMIT_DOC_TYPES,
+    _report_no_from_ocr,
     classify_and_extract,
 )
 from chandra.license_check import LicenseCheckInput, check_license
@@ -76,20 +77,6 @@ def _num(value: Any) -> float | None:
 
     m = re.search(r"[-+]?\d[\d,]*\.?\d*", str(value))
     return float(m.group(0).replace(",", "")) if m else None
-
-
-def _report_no_from_ocr(ocr: str | None) -> str | None:
-    """OCR 원문에서 품목제조보고번호(보통 '품목(제조)보고/신고번호' 뒤 10~16자리)를 회수.
-
-    Gemma 가 숫자 식별자를 놓치는 경우를 보완. 그룹핑·교차대조의 핵심 키라 신뢰도 높은
-    OCR 숫자열로 폴백한다. 발견 못 하면 None.
-    """
-    import re
-
-    if not ocr:
-        return None
-    m = re.search(r"품목\s*(?:제조)?\s*(?:보고|신고)\s*번호\D{0,6}(\d{10,16})", ocr)
-    return m.group(1) if m else None
 
 
 def _to_manufacture(ext: dict[str, Any] | None) -> ManufactureReport | None:

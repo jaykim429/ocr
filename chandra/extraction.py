@@ -70,15 +70,30 @@ def _product_name_from_ocr(ocr_text: str | None) -> str | None:
     """
     if not ocr_text:
         return None
+    # 값 종결: 다음 필드 라벨 앞 또는 '줄끝'(\n/문자열끝). 줄끝을 종결자에 포함하지 않으면
+    # '제품명 ○○\n' 처럼 값 뒤가 줄바꿈인 경우(품목제조보고서 양식) 매칭에 실패한다.
     m = re.search(
         r"제\s*품\s*명\s*[:：]?\s*([가-힣A-Za-z0-9()\[\]·\-&. ]+?)"
-        r"(?:\s*(?:품목|식품유형|유형|재질|신고번호|보고번호|내용량|규격|성명|업체|발급|접수|제조국)|$)",
+        r"(?=\s*(?:품목|식품유형|유형|재질|신고번호|보고번호|내용량|규격|성명|업체|발급|접수|제조국)|\s*$)",
         ocr_text,
+        re.MULTILINE,
     )
     if not m:
         return None
     name = re.sub(r"\s{2,}", " ", m.group(1)).strip()
     return name if 2 <= len(name.replace(" ", "")) <= 40 else None
+
+
+def _report_no_from_ocr(ocr_text: str | None) -> str | None:
+    """OCR 원문에서 품목제조보고번호('품목(제조)보고/신고번호' 뒤 10~16자리)를 회수.
+
+    Gemma 가 숫자를 전치·오인식(예: 20020308293354 → 20200308293354)해 그룹핑 키가
+    어긋나는 것을 막기 위해, 숫자키는 OCR 원문을 권위로 쓴다. 못 찾으면 None.
+    """
+    if not ocr_text:
+        return None
+    m = re.search(r"품목\s*(?:제조)?\s*(?:보고|신고)\s*번호\D{0,6}(\d{10,16})", ocr_text)
+    return m.group(1) if m else None
 
 
 # 환각 검증 대상 고유명사 필드.
@@ -561,6 +576,12 @@ def classify_and_extract(
             if ocr_name and cur and _norm_ko(ocr_name) != _norm_ko(cur):
                 result["_product_name_gemma"] = cur
                 result["product_name"] = ocr_name
+            # 보고번호(그룹핑 핵심 키)도 OCR 권위로 — Gemma 숫자 전치/오인식 교정
+            ocr_rno = _report_no_from_ocr(ocr_text)
+            rno = result.get("manufacture_report_no")
+            if ocr_rno and rno and re.sub(r"\D", "", str(rno)) != ocr_rno:
+                result["_report_no_gemma"] = rno
+                result["manufacture_report_no"] = ocr_rno
 
         # 누락/오인식 핵심 필드 재추출. 단일 제품은 전체 핵심필드, 병합 PDF 다제품은
         # 그룹핑·판정에 직결되는 필드만(비용 절감) + 제품명 컨텍스트로 교차오염 방지.
